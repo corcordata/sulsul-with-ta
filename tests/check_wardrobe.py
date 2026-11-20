@@ -10,7 +10,7 @@ from simslink import game, pump  # noqa: E402
 import services  # noqa: E402
 import world  # noqa: E402
 
-pump.cfg = {'ai_names': ['林澈', '澈'], 'player_names': ['小椴']}
+pump.cfg = {'ta_names': ['林澈', '澈'], 'player_names': ['小椴']}
 pump.link = type('L', (), {'push_event': lambda self, e: None})()
 him = world.HIM
 

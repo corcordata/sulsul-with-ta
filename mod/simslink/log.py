@@ -8,9 +8,9 @@ _MAX_BYTES = 1024 * 1024
 
 DEFAULTS = {
     'port': 47931,
-    # 名字里带这些字的小人是 AI 的那个。游戏控制台 ta ai 名字 会写到 SimsLink.cfg 里
-    'ai_names': [],
-    # 名字里带这些字的小人是玩家自己（TA 被别人亲了、快饿晕了，游戏会去叫 AI）。ta me 名字
+    # 名字里带这些字的小人是 TA。游戏控制台 ta ta 编号 会写到 SimsLink.cfg 里
+    'ta_names': [],
+    # 名字里带这些字的小人是玩家自己（被别人亲了、快饿晕了，游戏会去叫 TA）。ta me 编号
     'player_names': [],
 }
 

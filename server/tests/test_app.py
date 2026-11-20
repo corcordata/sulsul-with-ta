@@ -71,7 +71,7 @@ class _Catcher:
 def _start(tmp_path, **extra):
     port = _free_port()
     env = dict(os.environ, SIMSLINK_DATA=str(tmp_path / "data"), SIMSLINK_PORT=str(port), SIMSLINK_HOST="127.0.0.1",
-               SIMSLINK_MOD_TOKEN=MOD, SIMSLINK_AI_TOKEN=AI, SIMSLINK_PUBLIC_URL=f"http://127.0.0.1:{port}",
+               SIMSLINK_MOD_TOKEN=MOD, SIMSLINK_TA_TOKEN=AI, SIMSLINK_PUBLIC_URL=f"http://127.0.0.1:{port}",
                PYTHONUNBUFFERED="1")
     for key in ("SIMSLINK_WEBHOOK_URL", "SIMSLINK_WEBHOOK_TOKEN", "SIMSLINK_REPLY_MIRROR", "SIMSLINK_PLAYER_PRONOUN"):
         env.pop(key, None)

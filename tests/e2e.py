@@ -77,7 +77,7 @@ async def play_ai(base: str, catcher: _Catcher) -> None:
         assert asked["ok"] and "输入框" in asked["text"]
         push = await asyncio.to_thread(catcher.wait, "say", 10)
         assert push["said"] == "我在做饭呀" and "接着上一句" in push["text"] or "跟上一句时一样" in push["text"], push["text"]
-        step("AI 看、说话、弹输入框问她；她在框里回的话又推了回来（第二句只带变了的）")
+        step("TA 看、说话、弹输入框问她；她在框里回的话又推了回来（第二句只带变了的）")
 
         listed = await do("list", target="小椴")
         assert listed["ok"] and "亲吻" in listed["text"], listed
@@ -90,7 +90,7 @@ async def play_ai(base: str, catcher: _Catcher) -> None:
         assert paid["ok"] and "§2,000" in paid["text"], paid
         cards = await do("moodlets")
         assert cards["ok"] and "初吻" in cards["text"], cards
-        step("AI 操控小人：列动作（中文名来自假字库）、亲吻、看物件、换睡衣、打钱、看情绪卡片")
+        step("TA 操控小人：列动作（中文名来自假字库）、亲吻、看物件、换睡衣、打钱、看情绪卡片")
 
         out = (await http.post(base + "/sims/reply", headers=_h(AI),
                                json={"text": "我先去躺着等你。⟪小人:睡觉 → Bed⟫"})).json()
@@ -111,7 +111,7 @@ async def play_ai(base: str, catcher: _Catcher) -> None:
             shot = await client.call_tool("sims", {"action": "photo", "text": "留一张"})
             assert [c.type for c in shot.content] == ["text", "image"], shot.content[0].text
             assert len(shot.content[1].data) > 500
-        step("MCP 连接器：look 看得到；photo 让转发程序「按了快门」，图直接交到 AI 手里")
+        step("MCP 连接器：look 看得到；photo 让转发程序「按了快门」，图直接交到 TA 手里")
 
         push = await asyncio.to_thread(catcher.wait, "photo", 20)
         picture = await http.get(push["images"][0])
@@ -120,7 +120,7 @@ async def play_ai(base: str, catcher: _Catcher) -> None:
 
         push = await asyncio.to_thread(catcher.wait, "wake", 20)
         assert "游戏叫你" in push["text"] and "Bella" in push["text"], push["text"]
-        step("她的小人去亲 Bella → 游戏自己来叫 AI")
+        step("她的小人去亲 Bella → 游戏自己来叫 TA")
 
         assert (await do("speed", speed="2"))["ok"]
         assert "取消了" in (await do("cancel"))["text"]
@@ -143,7 +143,7 @@ def main() -> int:
         port = _free_port()
         base = f"http://127.0.0.1:{port}"
         env = dict(os.environ, PYTHONPATH=str(ROOT / "server"), SIMSLINK_DATA=str(tmp / "data"), SIMSLINK_PORT=str(port),
-                   SIMSLINK_HOST="127.0.0.1", SIMSLINK_MOD_TOKEN=MOD, SIMSLINK_AI_TOKEN=AI, SIMSLINK_PUBLIC_URL=base,
+                   SIMSLINK_HOST="127.0.0.1", SIMSLINK_MOD_TOKEN=MOD, SIMSLINK_TA_TOKEN=AI, SIMSLINK_PUBLIC_URL=base,
                    SIMSLINK_WEBHOOK_URL=f"http://127.0.0.1:{catcher.port}/hook", SIMSLINK_REPLY_MIRROR="1",
                    SIMSLINK_PLAYER_PRONOUN="她", PYTHONUNBUFFERED="1")
         server = subprocess.Popen([sys.executable, "-m", "simslink_server"], cwd=tmp, env=env,
@@ -180,21 +180,22 @@ def main() -> int:
         notes = [(n[0], n[1]) for n in seen["notifications"]]
         console = "\n".join(seen["console"])
         assert any("还没告诉我哪个小人是 TA" in n[1] for n in notes), notes
-        assert "还没设（ta ai 名字）" in console and "家里没有名字带「不存在」的小人" in console
-        assert "记下了：TA 的小人是名字带「澈」的那个。" in console and "TA 的小人：澈｜我的小人：小椴" in console
-        step("头一回进游戏会提醒设小人；ta ai / ta me 记下了，写错名字会告诉她家里有谁")
+        assert "还没设（ta who）" in console and "家里没有名字带「不存在」的小人" in console
+        assert "家里有：1 林澈　2 林小椴　3 林团子" in console and "没有 9 号。" in console
+        assert "记下了：TA 的小人是「林澈」。" in console and "TA 的小人：林澈｜我的小人：小椴" in console
+        step("头一回进游戏会提醒设小人；ta who 列编号，ta ta 1 / ta me 名字 记下了，写错会告诉她家里有谁")
         assert ("林澈", "过来，让我抱一下。") in notes and ("林澈", "我先去躺着等你。") in notes, notes
         assert ("林澈", "给你转了 §2,000：去买那个沙发") in notes
         assert ("林澈", "晚饭想吃什么？") in [tuple(d) for d in seen["dialogs"]]
         assert any("发给 TA 了，1 张" in n[1] for n in notes), notes
-        step("游戏这头：AI 的话弹出来了，标题是 TA 小人的名字；打钱、截图的回执都在")
+        step("游戏这头：TA 的话弹出来了，标题是 TA 小人的名字；打钱、截图的回执都在")
         did = [(who, act) for who, act, _target in seen["executed"]]
         assert ("澈", "mixer_social_Kiss_targeted_romance") in did and ("澈", "bed_Sleep") in did, seen["executed"]
         assert seen["his_outfit"][0] == 3, seen["his_outfit"]          # 3 = 睡衣那一类
         assert all("cancelled" in item for item in seen["his_queue"]), seen["his_queue"]
         step("小人真的排上了亲吻和睡觉，换上了睡衣，最后 cancel 全清掉了")
         names = json.loads((sims / "Mods" / "SimsLink" / "SimsLink.cfg").read_text(encoding="utf-8"))
-        assert names["ai_names"] == ["澈"] and names["player_names"] == ["小椴"], names
+        assert names["ta_names"] == ["林澈"] and names["player_names"] == ["小椴"], names
 
         print("第二场：快捷键说话、换键、老板键（约 13 秒）", flush=True)
         key = run_game("e2e_key_game.py", ts4, 13)

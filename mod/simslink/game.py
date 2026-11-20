@@ -5,10 +5,12 @@
 """
 import math
 import re
+import sys
 import time
 
 from simslink import log, names
 
+CONSOLE_KEYS = 'Cmd+Shift+C' if sys.platform == 'darwin' else 'Ctrl+Shift+C'    # 打开游戏输入条的键
 FRIENDSHIP_TRACK = 16650
 ROMANCE_TRACK = 16651
 IDLE_PREFIXES = ('sim-stand', 'stand_passive', 'sim_stand', 'idle_')
@@ -159,7 +161,7 @@ def find_sim(query, his_names=()):
             for info in pool:
                 if key and key.lower() in sim_name(info).lower():
                     return info
-        hint = '' if his_names else '玩家还没告诉 mod 哪个小人是你：请她在游戏控制台（Ctrl+Shift+C）输入 ta ai 你的小人名字。'
+        hint = '' if his_names else '玩家还没告诉 mod 哪个小人是你：请她在游戏里按 %s，输入 ta who，照列出来的编号选一下。' % CONSOLE_KEYS
         raise OpError('没找到你的小人。%s在场的有：%s。也可以用 who 写上名字。' % (hint, '、'.join(sim_name(i) for i in pool[:12])))
     q = str(query).strip().lower()
     exact = [i for i in pool if sim_name(i).lower() == q]

@@ -4,6 +4,7 @@ bridge/bin/
 bridge/obj/
 server/.venv/
 server/data/
+server/data-lan-test/
 server/.env
 __pycache__/
 *.pyc

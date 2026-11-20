@@ -42,8 +42,8 @@ def _background(fn):
 
 
 def his_names():
-    """AI 的小人叫什么（名字里带这些字的那个）。"""
-    return [str(n) for n in (cfg.get('ai_names') or []) if n]
+    """TA 的小人叫什么（名字里带这些字的那个）。"""
+    return [str(n) for n in (cfg.get('ta_names') or []) if n]
 
 
 def her_names():
@@ -52,7 +52,7 @@ def her_names():
 
 
 def set_names(which, names):
-    """ta ai 名字 / ta me 名字：记进 SimsLink.cfg，当场生效。"""
+    """ta ta 编号 / ta me 编号：记进 SimsLink.cfg，当场生效。"""
     cfg[which] = list(names)
     log.save_config({which: list(names)})
     _state['force'] = True
@@ -475,8 +475,8 @@ def on_tick():
             if not his_names() and not _state.get('nagged') and screen == 'live':
                 _state['nagged'] = True
                 try:
-                    game.notify('SimsLink', '还没告诉我哪个小人是 TA。按 Ctrl+Shift+C 打开控制台，输入：ta ai 小人的名字。'
-                                            '再输入 ta me 你自己小人的名字。只用设一次。')
+                    game.notify('SimsLink', '还没告诉我哪个小人是 TA。按 %s 打开左上角的输入条，输入 ta who，' % game.CONSOLE_KEYS +
+                                            '照它列出来的编号选一下。只用设一次。')
                 except Exception:
                     log.once('nag', '提醒弹不出来：%s' % log.tail_error())
             if now - _state['last_snap'] >= SNAP_EVERY:
@@ -517,4 +517,4 @@ def install():
 
     wrapped._simslink = True
     game_services.on_tick = wrapped
-    log.info('泵装好了，转发程序端口 %s，AI 的小人：%s' % (link.port, '/'.join(his_names()) or '还没设'))
+    log.info('泵装好了，转发程序端口 %s，TA 的小人：%s' % (link.port, '/'.join(his_names()) or '还没设'))

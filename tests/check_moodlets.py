@@ -45,12 +45,12 @@ assert k1 == k2
 # ta ime off / on：记进 SimsLink.cfg，别的项留着
 cfg_path = os.path.join(log._dir(), 'SimsLink.cfg')
 with open(cfg_path, 'w', encoding='utf-8') as f:
-    json.dump({'ai_names': ['林澈']}, f, ensure_ascii=False)
+    json.dump({'ta_names': ['林澈']}, f, ensure_ascii=False)
 pump.cfg = log.load_config()
 commands.REGISTERED['ta']('ime', 'off', _connection=1)
 assert pump.cfg['auto_ime'] is False
 saved = json.load(open(cfg_path, encoding='utf-8'))
-assert saved == {'ai_names': ['林澈'], 'auto_ime': False}, saved
+assert saved == {'ta_names': ['林澈'], 'auto_ime': False}, saved
 commands.REGISTERED['ta']('ime', 'on', _connection=1)
 assert json.load(open(cfg_path, encoding='utf-8'))['auto_ime'] is True
 os.remove(cfg_path)

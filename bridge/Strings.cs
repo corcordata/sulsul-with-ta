@@ -181,6 +181,7 @@ static class Strings
     {
         string forced = Environment.GetEnvironmentVariable("SIMSLINK_GAME_DIR") ?? "";
         if (forced.Length > 0) return forced;
+        if (OperatingSystem.IsMacOS()) return Mac.GameDir();
         try
         {
             foreach (var process in Process.GetProcesses())
