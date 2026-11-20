@@ -1,0 +1,14 @@
+build/
+dist/
+bridge/bin/
+bridge/obj/
+server/.venv/
+server/data/
+server/.env
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+SimsLinkBridge.key
+SimsLinkBridge.boss
+SimsLinkBridge.names.json
