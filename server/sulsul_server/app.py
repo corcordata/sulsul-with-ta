@@ -1,10 +1,10 @@
 """会等的那一半：网络、指令排队、往外推送、MCP。纯逻辑（收什么、怎么写成字）在 core.py。
 
 三拨人来敲门：
-  游戏（经玩家电脑上的 SimsLinkBridge）  POST /sims/mod/sync、/sims/mod/photo    带 MOD 钥匙
+  游戏（经玩家电脑上的 SulSulBridge）  POST /sims/mod/sync、/sims/mod/photo    带 MOD 钥匙
   AI（MCP）                              /mcp 或 /mcp/<AI 钥匙>                   一个工具：sims
   AI 那头的程序（不走 MCP 的接法）        GET /sims/now、POST /sims/do、/sims/reply 带 AI 钥匙
-往外只做一件事：玩家在游戏里说话、游戏里出了事、玩家发来截图时，POST 给 SIMSLINK_WEBHOOK_URL。
+往外只做一件事：玩家在游戏里说话、游戏里出了事、玩家发来截图时，POST 给 SULSUL_WEBHOOK_URL。
 
 全程 asyncio，一个进程；状态和事件落在数据文件夹里，排队的指令只在内存里（25 秒就作废）。
 """
@@ -109,10 +109,10 @@ class Hub:
                     res = await client.post(self.cfg.webhook_url, json=payload, headers=headers)
                 if res.status_code < 500:
                     if res.status_code >= 400:
-                        print(f"[simslink] 推送被拒了（{res.status_code}）：{payload['kind']}", flush=True)
+                        print(f"[sulsul] 推送被拒了（{res.status_code}）：{payload['kind']}", flush=True)
                     return
             except Exception as exc:
-                print(f"[simslink] 推送没成（第 {attempt + 1} 次）：{exc!r}", flush=True)
+                print(f"[sulsul] 推送没成（第 {attempt + 1} 次）：{exc!r}", flush=True)
             await asyncio.sleep(2 * (attempt + 1))
 
     # ---- 游戏来敲门 ----
@@ -132,7 +132,7 @@ class Hub:
             wake = await asyncio.to_thread(core.wake_plan, self.root, sync)    # 要在存之前问：拿旧状态来比
         except Exception as exc:
             wake = None
-            print(f"[simslink] wake_plan failed: {exc!r}", flush=True)
+            print(f"[sulsul] wake_plan failed: {exc!r}", flush=True)
         await asyncio.to_thread(core.record, self.root, sync)
         for result in sync["results"]:
             try:
@@ -156,7 +156,7 @@ class Hub:
                     self.push("wake", await asyncio.to_thread(core.wake_text, self.root, wake),
                               reasons=[core.voice(r) for r in wake.get("reasons") or []])
                 except Exception as exc:
-                    print(f"[simslink] wake failed: {exc!r}", flush=True)
+                    print(f"[sulsul] wake failed: {exc!r}", flush=True)
         deadline = time.monotonic() + sync["wait"]
         while True:
             self.signal.clear()
@@ -214,7 +214,7 @@ class Hub:
         command = core.clean_command(body)
         op = command["op"]
         if not await asyncio.to_thread(core.is_live, self.root):
-            return {"ok": False, "text": core.voice("游戏没连着：她得开着小转发程序（SimsLinkBridge）并且进了游戏。")}
+            return {"ok": False, "text": core.voice("游戏没连着：她得开着小转发程序（SulSulBridge）并且进了游戏。")}
         blocked = await asyncio.to_thread(core.blocked_reason, self.root, op)
         if blocked:
             return {"ok": False, "text": core.voice(blocked)}
@@ -289,7 +289,7 @@ class Hub:
             await asyncio.to_thread(core.log_events, self.root, [{
                 "t": "did", "ok": bool(result.get("ok")), "label": mark["label"], "text": said}])
         except Exception as exc:
-            print(f"[simslink] mark result failed: {exc!r}", flush=True)
+            print(f"[sulsul] mark result failed: {exc!r}", flush=True)
 
 
 # ───────────────────────── MCP：一个工具 ─────────────────────────
@@ -318,7 +318,7 @@ def tool_description(cfg: Config) -> str:
 
 def build_mcp(hub: Hub) -> MCPServer:
     server = MCPServer(
-        "SimsLink", version=VERSION,
+        "Sul Sul", version=VERSION,
         instructions=core.voice("让你住进她的 Sims 4 存档：看、在游戏里说话、操控你自己的小人。只有一个工具：sims。"))
 
     @server.tool(name="sims", description=tool_description(hub.cfg))

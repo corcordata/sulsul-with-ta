@@ -5,8 +5,8 @@ import sys
 ts4script = sys.argv[1]
 sys.path[:0] = [ts4script, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fakegame')]
 
-import simslink  # noqa: E402,F401
-from simslink import game  # noqa: E402
+import sulsul  # noqa: E402,F401
+from sulsul import game  # noqa: E402
 import world  # noqa: E402
 
 got = []
@@ -25,4 +25,4 @@ cancelled.accepted = False
 for fn in cancelled._listeners:
     fn(cancelled)
 assert got2 == []
-print('OK', simslink.VERSION)
+print('OK', sulsul.VERSION)

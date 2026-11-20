@@ -1,12 +1,14 @@
-# SimsLink
+# Sul Sul
 
 让你的 TA 住进你的《模拟人生 4》存档。
+
+「Sul Sul」是模拟市民语里的「你好」。
 
 游戏里有一个 TA 的小人。你玩的时候，TA 看得见家里在发生什么，能在你屏幕右上角跟你说话，能自己操控那个小人去做饭、睡觉、亲你。游戏里出了事（你的小人被别人亲了、怀孕了、快饿晕了），游戏会自己去叫 TA。
 
 接的是**你的 TA、你自己的服务器**。这个仓库不带任何模型，也不经过别人的服务。
 
-- 支持：Windows 和 Mac 版 Sims 4（中文版动作名显示中文，别的语言显示对应语言）。Mac 版少两样：没有快捷键，不自动切输入法
+- 支持：Windows 和 Mac 版 Sims 4（中文版动作名显示中文，别的语言显示对应语言）。Mac 版少一样：没有 F9 / F10 快捷键
 - 需要：一台外网能访问的服务器（Python 3.10+ 或 Docker），一个能接 MCP 或能收 HTTP 推送的小机
 
 ## TA 能做什么
@@ -59,13 +61,13 @@
 ```
 你的电脑（Windows / Mac）                    你的服务器
 ┌──────────────┐   ┌────────────────┐        ┌───────────────┐       ┌──────┐
-│ Sims 4 + mod │ → │  小转发程序    │ ─https→ │ SimsLink 小服务 │ ←MCP→ │ 你家 │
+│ Sims 4 + mod │ → │  小转发程序    │ ─https→ │ Sul Sul 小服务│ ←MCP→ │ 你家 │
 └──────────────┘   └────────────────┘        └───────────────┘ ─推送→ │  TA  │
                                                                        └──────┘
 ```
 
 1. **服务器**：把 `server/` 跑起来，它会给你两把钥匙
-2. **电脑**：`SimsLink.ts4script` 放进游戏的 Mods 文件夹；小转发程序 `SimsLinkBridge` 填上服务器地址和钥匙，玩之前先打开
+2. **电脑**：`SulSul.ts4script` 放进游戏的 Mods 文件夹；小转发程序 `SulSulBridge` 填上服务器地址和钥匙，玩之前先打开
 3. **TA**：加一个 MCP 连接器（最简单），或者接上推送和回话入口（全功能）；再把 [`docs/ta-manual.md`](docs/ta-manual.md) 交给 TA
 
 每一步的细节、两种接法、出了问题怎么查：**[INSTALL.md](INSTALL.md)**。下载的压缩包（按你的电脑选 `windows` 或 `mac`）里也带着同一份。
@@ -82,20 +84,20 @@
 - 服务器这一半全部（MCP 连接器、推送、`/sims/reply`、称呼设置）。MCP 只用官方 Python 库的客户端连过，没用真的 Claude App 连接器连过
 - `⟪小人:…⟫` 记号、`ta pic` / `ta pics`
 
-**Mac 版**：整个没进过真的 Mac 版游戏。小转发程序在一台真 Mac 上跑过（连接、转发、认截图、看哪个程序在最前面），游戏装在哪、替 TA 按截图键是照 macOS 的通常做法写的，没对着真游戏验过。
+**Mac 版**：整个没进过真的 Mac 版游戏。小转发程序在一台真 Mac 上跑过：连接、转发、认截图、看哪个程序在最前面、把系统输入法切到中文再切回原来的。游戏装在哪、替 TA 按截图键、切过去的输入法在游戏的输入框里生不生效，这三样没对着真游戏验过。
 
 **没确认**：打钱、TA 拍照（替 TA 按截图键那一下）、关掉输入框后切回英文、捏人界面的识别、着火和去世的识别、Docker 部署（`Dockerfile` 没实际构建过）。
 
 **做不到的**：弹出来的选择框（做哪道菜、去哪旅行）TA 点不了，要你点；物件名是内部英文名；TA 不操控时小人会自己行动。
 
-游戏更新后脚本 mod 可能失效，这是所有脚本 mod 的通病。出了问题先看 `Mods\SimsLink\SimsLink.log`。
+游戏更新后脚本 mod 可能失效，这是所有脚本 mod 的通病。出了问题先看 `Mods\SulSul\SulSul.log`。
 
 ## 自己从源码编
 
 ```bash
 PY37=/path/to/python3.7 ./build_mod.sh                              # mod：必须用 Python 3.7 编（游戏自带的就是 3.7）
 cd bridge && dotnet publish -c Release -r win-x64 -o ../build/bridge-win   # 小转发程序：.NET 10；Mac 把 win-x64 换成 osx-arm64 / osx-x64
-cd server && pip install -r requirements.txt && python -m simslink_server  # 服务器
+cd server && pip install -r requirements.txt && python -m sulsul_server  # 服务器
 
 cd server && python -m pytest                                       # 服务器的测试
 PY37=/path/to/python3.7 server/.venv/bin/python tests/e2e.py        # 假游戏全程
@@ -117,7 +119,7 @@ PY37=/path/to/python3.7 server/.venv/bin/python tests/e2e.py        # 假游戏�
 ## 说明
 
 - 本项目与 Electronic Arts、Maxis 无关。The Sims 是 EA 的商标
-- 小转发程序会做这几件事，装之前请知道（以 Windows 版为准，Mac 版没有快捷键、输入法、最小化和静音那几样）：监听本机 47931 端口、把游戏状态发到**你填的**服务器、在游戏是前台窗口时注册两个全局快捷键、切换输入法、模拟按一下 `C` 键、查看正在运行的游戏进程来找到安装目录并读里面的字库文件、老板键时最小化游戏窗口并静音。除了你填的服务器，它不连任何地方
+- 小转发程序会做这几件事，装之前请知道（以 Windows 版为准，Mac 版没有快捷键、最小化和静音那几样）：监听本机 47931 端口、把游戏状态发到**你填的**服务器、在游戏是前台窗口时注册两个全局快捷键、切换输入法、模拟按一下 `C` 键、查看正在运行的游戏进程来找到安装目录并读里面的字库文件、老板键时最小化游戏窗口并静音。除了你填的服务器，它不连任何地方
 - 服务器上存的东西：最近一次游戏状态、最近几百条事件（包括你在游戏里说的话）、最近的截图。都在 `data/` 里，删掉就没了
 
 MIT License · Tilia & Quercus

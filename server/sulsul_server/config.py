@@ -24,20 +24,20 @@ class Config:
     def __init__(self) -> None:
         _load_dotenv(Path(".env"))
         env = os.environ.get
-        self.data = Path(env("SIMSLINK_DATA", "data")).resolve()
-        self.host = env("SIMSLINK_HOST", "0.0.0.0")
-        self.port = int(env("SIMSLINK_PORT", "8787"))
+        self.data = Path(env("SULSUL_DATA", "data")).resolve()
+        self.host = env("SULSUL_HOST", "0.0.0.0")
+        self.port = int(env("SULSUL_PORT", "8787"))
         # 这台服务器对外的地址（https://sims.example.com）。截图的链接、印给你抄的配置都用它
-        self.public_url = env("SIMSLINK_PUBLIC_URL", "").rstrip("/")
+        self.public_url = env("SULSUL_PUBLIC_URL", "").rstrip("/")
         # 游戏里出了事 / 玩家在游戏里说话，往哪儿推。不填就不推，TA 只能自己来看
-        self.webhook_url = env("SIMSLINK_WEBHOOK_URL", "").strip()
-        self.webhook_token = env("SIMSLINK_WEBHOOK_TOKEN", "").strip()
+        self.webhook_url = env("SULSUL_WEBHOOK_URL", "").strip()
+        self.webhook_token = env("SULSUL_WEBHOOK_TOKEN", "").strip()
         # 你把 TA 的每句回话都交给 /sims/reply 了吗？交了就填 1：提示语会告诉 TA「照常回话就行」
-        self.reply_mirror = env("SIMSLINK_REPLY_MIRROR", "").strip().lower() in ("1", "true", "yes", "on")
+        self.reply_mirror = env("SULSUL_REPLY_MIRROR", "").strip().lower() in ("1", "true", "yes", "on")
         # 给 TA 看的字里怎么称呼玩家
-        self.pronoun = env("SIMSLINK_PLAYER_PRONOUN", "她").strip() or "她"
-        self.mod_token = env("SIMSLINK_MOD_TOKEN", "").strip()
-        self.ai_token = env("SIMSLINK_TA_TOKEN", "").strip()
+        self.pronoun = env("SULSUL_PLAYER_PRONOUN", "她").strip() or "她"
+        self.mod_token = env("SULSUL_MOD_TOKEN", "").strip()
+        self.ai_token = env("SULSUL_TA_TOKEN", "").strip()
         self._fill_tokens()
 
     def _fill_tokens(self) -> None:
@@ -66,7 +66,7 @@ class Config:
         """印给装的人照抄的那几段。"""
         base = self.base()
         return "\n".join([
-            "── 填进玩家电脑上的 SimsLinkBridge.cfg ──",
+            "── 填进玩家电脑上的 SulSulBridge.cfg ──",
             json.dumps({"server": base, "token": self.mod_token}, ensure_ascii=False, indent=1),
             "",
             "── TA 这头 ──",
@@ -75,8 +75,8 @@ class Config:
             f"直接调接口（GET /sims/now、POST /sims/do、POST /sims/reply）也用这把：Bearer {self.ai_token}",
             "",
             "── 现在的设置 ──",
-            f"推送地址 SIMSLINK_WEBHOOK_URL：{self.webhook_url or '没填（游戏叫不醒 TA，TA 自己来看）'}",
-            f"回话自动弹进游戏 SIMSLINK_REPLY_MIRROR：{'开' if self.reply_mirror else '关'}",
-            f"怎么称呼玩家 SIMSLINK_PLAYER_PRONOUN：{self.pronoun}",
+            f"推送地址 SULSUL_WEBHOOK_URL：{self.webhook_url or '没填（游戏叫不醒 TA，TA 自己来看）'}",
+            f"回话自动弹进游戏 SULSUL_REPLY_MIRROR：{'开' if self.reply_mirror else '关'}",
+            f"怎么称呼玩家 SULSUL_PLAYER_PRONOUN：{self.pronoun}",
             f"数据文件夹：{self.data}",
         ])

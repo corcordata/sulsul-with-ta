@@ -1,4 +1,4 @@
-"""假游戏主循环（Python 3.7）：跑「按快捷键说话」这条路。要先开着小转发程序（带 SIMSLINK_FAKE_SHOT，
+"""假游戏主循环（Python 3.7）：跑「按快捷键说话」这条路。要先开着小转发程序（带 SULSUL_FAKE_SHOT，
 这样它认 /local/press，替她按那一下）。服务器不用开：这条路只在本机走。
 
   ① 3 秒时「她按了快捷键」→ 弹出「跟 TA 说」的输入框，转发程序收到「切中文」
@@ -17,8 +17,8 @@ sys.path[:0] = [ts4script, os.path.join(os.path.dirname(os.path.abspath(__file__
 
 import game_services  # noqa: E402
 import world  # noqa: E402
-import simslink  # noqa: E402,F401
-from simslink import pump  # noqa: E402
+import sulsul  # noqa: E402,F401
+from sulsul import pump  # noqa: E402
 from sims4 import commands  # noqa: E402
 
 
@@ -60,4 +60,4 @@ assert titles == ['跟 TA 说'], '老板键不该弹输入框'
 paused = str(services._Clock.set_to)
 print(json.dumps({'dialogs': titles, 'said': said, 'paused': paused, 'notifications': world.NOTIFICATIONS,
                   'console': commands.CheatOutput.lines}, ensure_ascii=False, indent=1))
-print('OK', simslink.VERSION)
+print('OK', sulsul.VERSION)

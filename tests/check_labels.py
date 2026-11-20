@@ -5,8 +5,8 @@ import sys
 ts4script = sys.argv[1]
 sys.path[:0] = [ts4script, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fakegame')]
 
-import simslink  # noqa: E402,F401
-from simslink import game  # noqa: E402
+import sulsul  # noqa: E402,F401
+from sulsul import game  # noqa: E402
 import world  # noqa: E402
 
 buffs = ['kawaiistacie_SliceofLifeMenstrualCycle_3XQUKHFVZM2',
@@ -45,4 +45,4 @@ snap = game.snapshot(['澈'])
 him = [s for s in snap['sims'] if s.get('his')][0]
 assert [b['t'] for b in him['buffs']] == ['Buff_FirstKiss'], him['buffs']
 assert him['rel']['林小椴']['bits'] == ['romantic-Married'], him['rel']
-print('OK', simslink.VERSION)
+print('OK', sulsul.VERSION)

@@ -5,8 +5,8 @@ import sys
 ts4script = sys.argv[1]
 sys.path[:0] = [ts4script, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fakegame')]
 
-import simslink  # noqa: E402,F401
-from simslink import game, pump  # noqa: E402
+import sulsul  # noqa: E402,F401
+from sulsul import game, pump  # noqa: E402
 import services  # noqa: E402
 import world  # noqa: E402
 
@@ -67,4 +67,4 @@ assert {'t': 'fire', 'on': True} in events and {'t': 'death', 'who': '林小椴'
 services.FIRE.fire_is_active = False
 world.HER.is_dead = False
 assert {'t': 'fire', 'on': False} in pump._diff_events(after, game.snapshot(pump.his_names(), pump.her_names()))
-print('OK', simslink.VERSION)
+print('OK', sulsul.VERSION)

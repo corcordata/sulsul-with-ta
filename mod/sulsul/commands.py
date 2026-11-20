@@ -18,7 +18,7 @@ import time
 
 import sims4.commands
 
-from simslink import game, log, pump
+from sulsul import game, log, pump
 
 
 def _names():
@@ -29,10 +29,10 @@ def _names():
 def _status():
     link = pump.link
     if link is None:
-        return 'SimsLink 没启动，看 SimsLink.log'
+        return 'Sul Sul 没启动，看 SulSul.log'
     if link.connected:
         return '连着呢（%d 秒前刚通过话）。%s' % (max(0, int(time.time() - link.last_ok)), _names())
-    return '没连上小转发程序：%s —— 先把 SimsLinkBridge 打开。%s' % (link.last_error or '还没试过', _names())
+    return '没连上小转发程序：%s —— 先把 SulSulBridge 打开。%s' % (link.last_error or '还没试过', _names())
 
 
 def _family():
@@ -53,7 +53,7 @@ def _who():
 
 
 def _set_name(which, arg):
-    """ta ta 2 / ta me 小椴：编号或名字都行，记进 SimsLink.cfg。对不上就不记，把家里有谁列给玩家。"""
+    """ta ta 2 / ta me 小椴：编号或名字都行，记进 SulSul.cfg。对不上就不记，把家里有谁列给玩家。"""
     label = 'TA 的小人' if which == 'ta_names' else '你的小人'
     if not arg:
         return _who()
@@ -72,7 +72,7 @@ def _set_name(which, arg):
     return ['记下了：%s是「%s」。' % (label, name)]
 
 
-@sims4.commands.Command('ta', 'simslink', command_type=sims4.commands.CommandType.Live)
+@sims4.commands.Command('ta', 'sulsul', command_type=sims4.commands.CommandType.Live)
 def _ta(*args, _connection=None):
     try:
         output = sims4.commands.CheatOutput(_connection)
@@ -132,5 +132,5 @@ def _ta(*args, _connection=None):
         return True
     except Exception:
         log.exception('ta 命令出错')
-        output('出错了，看 SimsLink.log')
+        output('出错了，看 SulSul.log')
         return False

@@ -6,8 +6,8 @@ import sys
 ts4script = sys.argv[1]
 sys.path[:0] = [ts4script, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fakegame')]
 
-import simslink  # noqa: E402,F401
-from simslink import game, log, names, pump  # noqa: E402
+import sulsul  # noqa: E402,F401
+from sulsul import game, log, names, pump  # noqa: E402
 import world  # noqa: E402
 from sims4 import commands  # noqa: E402
 
@@ -42,8 +42,8 @@ him.Buffs[0]._timeout = 1150
 k2 = pump._stable_key(game.snapshot(('林澈',), ('小椴',)))
 assert k1 == k2
 
-# ta ime off / on：记进 SimsLink.cfg，别的项留着
-cfg_path = os.path.join(log._dir(), 'SimsLink.cfg')
+# ta ime off / on：记进 SulSul.cfg，别的项留着
+cfg_path = os.path.join(log._dir(), 'SulSul.cfg')
 with open(cfg_path, 'w', encoding='utf-8') as f:
     json.dump({'ta_names': ['林澈']}, f, ensure_ascii=False)
 pump.cfg = log.load_config()
@@ -54,4 +54,4 @@ assert saved == {'ta_names': ['林澈'], 'auto_ime': False}, saved
 commands.REGISTERED['ta']('ime', 'on', _connection=1)
 assert json.load(open(cfg_path, encoding='utf-8'))['auto_ime'] is True
 os.remove(cfg_path)
-print('OK', simslink.VERSION)
+print('OK', sulsul.VERSION)

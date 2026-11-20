@@ -8,7 +8,7 @@ _MAX_BYTES = 1024 * 1024
 
 DEFAULTS = {
     'port': 47931,
-    # 名字里带这些字的小人是 TA。游戏控制台 ta ta 编号 会写到 SimsLink.cfg 里
+    # 名字里带这些字的小人是 TA。游戏控制台 ta ta 编号 会写到 SulSul.cfg 里
     'ta_names': [],
     # 名字里带这些字的小人是玩家自己（被别人亲了、快饿晕了，游戏会去叫 TA）。ta me 编号
     'player_names': [],
@@ -25,7 +25,7 @@ def mod_dir():
         if probe.lower().endswith('.ts4script'):
             return parent
         probe = parent
-    # 没打包（Scripts 文件夹直接放 .py）时：.../Mods/SimsLink/Scripts/simslink/log.py
+    # 没打包（Scripts 文件夹直接放 .py）时：.../Mods/SulSul/Scripts/sulsul/log.py
     return os.path.dirname(os.path.dirname(os.path.dirname(here)))
 
 
@@ -48,7 +48,7 @@ def _dir():
 
 
 def _path():
-    return os.path.join(_dir(), 'SimsLink.log')
+    return os.path.join(_dir(), 'SulSul.log')
 
 
 def _write(level, msg):
@@ -95,8 +95,8 @@ def tail_error():
 
 
 def save_config(changes):
-    """把几项设置记进 SimsLink.cfg（别的项原样留着），下次开游戏还在。"""
-    path = os.path.join(_dir(), 'SimsLink.cfg')
+    """把几项设置记进 SulSul.cfg（别的项原样留着），下次开游戏还在。"""
+    path = os.path.join(_dir(), 'SulSul.cfg')
     data = {}
     try:
         with open(path, 'r', encoding='utf-8-sig') as f:
@@ -110,18 +110,18 @@ def save_config(changes):
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=1)
     except Exception:
-        exception('SimsLink.cfg 写不进去')
+        exception('SulSul.cfg 写不进去')
 
 
 def load_config():
     cfg = dict(DEFAULTS)
     try:
-        with open(os.path.join(_dir(), 'SimsLink.cfg'), 'r', encoding='utf-8-sig') as f:
+        with open(os.path.join(_dir(), 'SulSul.cfg'), 'r', encoding='utf-8-sig') as f:
             data = json.load(f)
         if isinstance(data, dict):
             cfg.update(data)
     except FileNotFoundError:
         pass
     except Exception:
-        exception('SimsLink.cfg 读不了，先用默认值')
+        exception('SulSul.cfg 读不了，先用默认值')
     return cfg

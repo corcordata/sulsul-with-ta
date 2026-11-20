@@ -1,4 +1,4 @@
-// SimsLinkBridge：玩家电脑上的小转发程序（Windows 全功能；Mac 没有快捷键和自动切输入法，见 Mac.cs）。
+// SulSulBridge：玩家电脑上的小转发程序（Windows 全功能；Mac 没有快捷键，见 Mac.cs / MacInput.cs）。
 // Sims 4 里的 Python 没有 ssl，连不了 https。游戏里的 mod 只敲本机这个端口，
 // 这里带上钥匙把它转给你自己的服务器，再把回话原样带回去。只转 /sims/mod/ 开头的路径。
 //
@@ -19,10 +19,16 @@ using System.Text;
 using System.Text.Json;
 
 Console.OutputEncoding = Encoding.UTF8;
-try { Console.Title = "SimsLinkBridge · 开着别关"; } catch { }
+// Mac 上切输入法要在主线程上做：转发程序另开一份自己来办这一件事，办完就退（见 MacInput.cs）
+if (args.Length == 2 && args[0] == "--ime" && OperatingSystem.IsMacOS())
+{
+    Console.WriteLine(MacInput.Run(args[1], Path.Combine(AppContext.BaseDirectory, "SulSulBridge.ime")));
+    return;
+}
+try { Console.Title = "SulSulBridge · 开着别关"; } catch { }
 
 string dir = AppContext.BaseDirectory;
-string cfgPath = Path.Combine(dir, "SimsLinkBridge.cfg");
+string cfgPath = Path.Combine(dir, "SulSulBridge.cfg");
 string relay = "", token = "";
 int port = 47931;
 try
@@ -35,12 +41,12 @@ try
 }
 catch (Exception ex)
 {
-    Fail($"读不了 SimsLinkBridge.cfg（要跟这个程序放在同一个文件夹里）：{ex.Message}");
+    Fail($"读不了 SulSulBridge.cfg（要跟这个程序放在同一个文件夹里）：{ex.Message}");
     return;
 }
 if (relay.Length == 0 || token.Length == 0)
 {
-    Fail("SimsLinkBridge.cfg 里的 server 或 token 是空的。用记事本打开它，把你服务器的地址和钥匙填进去。");
+    Fail("SulSulBridge.cfg 里的 server 或 token 是空的。用记事本打开它，把你服务器的地址和钥匙填进去。");
     return;
 }
 
@@ -51,7 +57,7 @@ var listener = new TcpListener(IPAddress.Loopback, port);
 try { listener.Start(); }
 catch (SocketException)
 {
-    Fail($"端口 {port} 被占了。是不是已经开着一个 SimsLinkBridge？关掉多的那个就行。");
+    Fail($"端口 {port} 被占了。是不是已经开着一个 SulSulBridge？关掉多的那个就行。");
     return;
 }
 
@@ -77,22 +83,22 @@ DateTime autoLast = DateTime.MinValue;
 var shootLock = new SemaphoreSlim(1, 1);
 
 // ── 说话快捷键 ──
-string keyPath = Path.Combine(dir, "SimsLinkBridge.key");   // 只存一个键名，跟装着钥匙的 cfg 分开
+string keyPath = Path.Combine(dir, "SulSulBridge.key");   // 只存一个键名，跟装着钥匙的 cfg 分开
 string hotkey = "F9";
 try { if (File.Exists(keyPath) && Win.KeyCode(File.ReadAllText(keyPath).Trim()) != 0) hotkey = File.ReadAllText(keyPath).Trim().ToUpperInvariant(); } catch { }
 var keySignal = new SemaphoreSlim(0, 1);
 DateTime keyAt = DateTime.MinValue;
 int imeTurn = 0;                                     // 第几次切输入法：补切的时候用来认「还是不是这一次」
 string keyKind = "talk";                             // 刚按的是哪个：talk=说话，boss=老板键
-string bossPath = Path.Combine(dir, "SimsLinkBridge.boss");
+string bossPath = Path.Combine(dir, "SulSulBridge.boss");
 string bossKey = "F10";
 try { if (File.Exists(bossPath) && Win.KeyCode(File.ReadAllText(bossPath).Trim()) != 0) bossKey = File.ReadAllText(bossPath).Trim().ToUpperInvariant(); } catch { }
-bool testing = Environment.GetEnvironmentVariable("SIMSLINK_FAKE_SHOT") is { Length: > 0 };
+bool testing = Environment.GetEnvironmentVariable("SULSUL_FAKE_SHOT") is { Length: > 0 };
 
 Strings.Init(dir, Say);
-Say("SimsLinkBridge 1.0.0 开着了。玩 Sims 的时候让这个窗口一直开着，最小化就行。");
+Say("SulSulBridge 1.0.0 开着了。玩 Sims 的时候让这个窗口一直开着，最小化就行。");
 bool mac = OperatingSystem.IsMacOS();
-if (mac) Say("想跟 TA 说话：在游戏里按 Cmd+Shift+C 打开输入条，输入 ta 回车。（Mac 版没有 F9 / F10 快捷键，也不自动切输入法。）");
+if (mac) Say("想跟 TA 说话：在游戏里按 Cmd+Shift+C 打开输入条，输入 ta 回车。（Mac 版没有 F9 / F10 快捷键。）");
 else Say($"想跟 TA 说话：在游戏里按 {hotkey}。老板键：{bossKey}（游戏立刻缩下去 + 静音）。换键：游戏控制台打 ta key F9 / ta boss F10 这样。");
 await Probe();
 Say("等游戏来敲门……（进到存档里才会敲）");
@@ -113,7 +119,7 @@ async Task Probe()
     {
         using var res = await Post("/sims/mod/sync", Encoding.UTF8.GetBytes("{\"probe\":true}"), "application/json");
         if (res.IsSuccessStatusCode) Say("服务器连得上 ✓");
-        else if ((int)res.StatusCode is 401 or 403) Say("服务器不认这把钥匙：SimsLinkBridge.cfg 里的 token 要填服务器上的 MOD_TOKEN。");
+        else if ((int)res.StatusCode is 401 or 403) Say("服务器不认这把钥匙：SulSulBridge.cfg 里的 token 要填服务器上的 MOD_TOKEN。");
         else Say($"服务器回了 {(int)res.StatusCode}，先开着，游戏来了再试。");
     }
     catch (Exception ex)
@@ -245,7 +251,12 @@ async Task<string> Local(string path, byte[] body)
             return Answer(true, $"换好了：以后在游戏里按 {hotkey} 跟 TA 说话。");
         case "/local/ime":
             bool chinese = root.TryGetProperty("on", out var imeOn) && imeOn.ValueKind == JsonValueKind.True;
-            if (mac && !testing) return Answer(true, "Mac 版不自动切输入法。");
+            if (mac && !testing)
+            {
+                string macNote = await Task.Run(() => MacInput.Switch(chinese));
+                Say((chinese ? "输入框开了，输入法 → 中文：" : "输入框关了，输入法 → 原来的：") + macNote);
+                return Answer(true, macNote);
+            }
             string imeNote = OperatingSystem.IsWindows() ? Win.Ime(chinese) : "（不是 Windows，假装切了）";
             int myTurn = Interlocked.Increment(ref imeTurn);
             if (OperatingSystem.IsWindows())
@@ -440,7 +451,7 @@ async Task<string> Shoot(long shot, string caption)
 string? PressShutter()
 {
     // 测试用：没有游戏的时候，把一张现成的图放进截图文件夹，假装游戏刚存出来
-    string? fake = Environment.GetEnvironmentVariable("SIMSLINK_FAKE_SHOT");
+    string? fake = Environment.GetEnvironmentVariable("SULSUL_FAKE_SHOT");
     if (!string.IsNullOrEmpty(fake))
     {
         string into = ShotDirs().FirstOrDefault(HasPictures) ?? ShotDirs().First();
@@ -665,7 +676,7 @@ static class Win
                 catch { }
                 Thread.Sleep(60);
             }
-        }) { IsBackground = true, Name = "SimsLinkHotkey" };
+        }) { IsBackground = true, Name = "SulSulHotkey" };
         thread.Start();
     }
 

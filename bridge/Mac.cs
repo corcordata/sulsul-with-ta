@@ -2,7 +2,7 @@
 // 全部走系统自带的 osascript（System Events），不碰原生接口：
 //   看哪个程序在最前面 → 第一次会问「允许控制 System Events 吗」（隐私与安全性 → 自动化）
 //   按键               → 要在 隐私与安全性 → 辅助功能 里把打开这个程序的那个「终端」勾上
-// Mac 版没有的：F9 / F10 快捷键、自动切输入法。跟 TA 说话用游戏里的输入条（Cmd+Shift+C，输入 ta）。
+// Mac 版没有的：F9 / F10 快捷键。跟 TA 说话用游戏里的输入条（Cmd+Shift+C，输入 ta）。切输入法在 MacInput.cs。
 using System.Diagnostics;
 
 static class Mac

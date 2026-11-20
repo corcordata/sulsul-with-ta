@@ -8,7 +8,7 @@ import re
 import sys
 import time
 
-from simslink import log, names
+from sulsul import log, names
 
 CONSOLE_KEYS = 'Cmd+Shift+C' if sys.platform == 'darwin' else 'Ctrl+Shift+C'    # 打开游戏输入条的键
 FRIENDSHIP_TRACK = 16650
@@ -54,7 +54,7 @@ def install_cas_watch():
     所以盯住游戏发给客户端的那条 sims.exit2cas：见到它之后存档停了，就是去捏人了。"""
     import sims4.commands as commands
     original = getattr(commands, 'client_cheat', None)
-    if original is None or getattr(original, '_simslink', False):
+    if original is None or getattr(original, '_sulsul', False):
         return
 
     def wrapped(text, *args, **kwargs):
@@ -66,7 +66,7 @@ def install_cas_watch():
             pass
         return original(text, *args, **kwargs)
 
-    wrapped._simslink = True
+    wrapped._sulsul = True
     commands.client_cheat = wrapped
 
 
@@ -777,7 +777,7 @@ def _input_dialog_class():
         return _input_cls
     from ui.ui_dialog_generic import UiDialogTextInputOkCancel
 
-    class SimsLinkTextInput(UiDialogTextInputOkCancel):
+    class SulSulTextInput(UiDialogTextInputOkCancel):
         def on_text_input(self, text_input_name='', text_input=''):
             # 返回 True = 收下了。返回 False 的话游戏会在控制台印一行
             # 「Unable to set dialog text input…」，字其实已经收到，只是看着像出错。
@@ -790,7 +790,7 @@ def _input_dialog_class():
             field.text_input_name = _INPUT_NAME
             return msg
 
-    _input_cls = SimsLinkTextInput
+    _input_cls = SulSulTextInput
     return _input_cls
 
 
@@ -1019,7 +1019,7 @@ def cancel_all(sim):
                 name = tuning_name(getattr(interaction, 'affordance', None) or type(interaction))
                 if _is_idle(name):
                     continue
-                interaction.cancel(FinishingType.USER_CANCEL, cancel_reason_msg='SimsLink')
+                interaction.cancel(FinishingType.USER_CANCEL, cancel_reason_msg='SulSul')
                 count += 1
             except Exception:
                 continue

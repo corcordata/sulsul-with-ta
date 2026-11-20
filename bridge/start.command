@@ -4,9 +4,9 @@
 # （直接双击会被 macOS 拦下来，因为这个程序没有花钱买苹果的签名。）
 cd "$(dirname "$0")" || exit 1
 xattr -dr com.apple.quarantine . 2>/dev/null
-chmod +x SimsLinkBridge-arm64 SimsLinkBridge-x64 2>/dev/null
+chmod +x SulSulBridge-arm64 SulSulBridge-x64 2>/dev/null
 if [ "$(uname -m)" = "arm64" ]; then
-  exec ./SimsLinkBridge-arm64
+  exec ./SulSulBridge-arm64
 else
-  exec ./SimsLinkBridge-x64
+  exec ./SulSulBridge-x64
 fi

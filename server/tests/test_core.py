@@ -5,7 +5,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from simslink_server import core  # noqa: E402
+from sulsul_server import core  # noqa: E402
 
 
 @pytest.fixture(autouse=True)

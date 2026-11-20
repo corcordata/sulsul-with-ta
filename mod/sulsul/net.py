@@ -9,7 +9,7 @@ import queue
 import threading
 import time
 
-from simslink import log
+from sulsul import log
 
 _OUT_CAP = 300
 
@@ -59,7 +59,7 @@ class Link(object):
             raw = resp.read()
             if resp.status != 200:
                 # 旧版转发程序不认识 /local/：它会回 404
-                return {'ok': False, 'text': '电脑上的小转发程序是旧版，不认识这个请求。换上新的 SimsLinkBridge。'}
+                return {'ok': False, 'text': '电脑上的小转发程序是旧版，不认识这个请求。换上新的 SulSulBridge。'}
             return json.loads(raw.decode('utf-8'))
         except Exception as exc:
             return {'ok': False, 'text': '问不到小转发程序：%s' % exc}
@@ -69,7 +69,7 @@ class Link(object):
     def start(self):
         if self._thread is not None:
             return
-        self._thread = threading.Thread(target=self._run, name='SimsLinkNet')
+        self._thread = threading.Thread(target=self._run, name='SulSulNet')
         self._thread.daemon = True
         self._thread.start()
 

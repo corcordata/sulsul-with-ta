@@ -33,7 +33,7 @@ static class Strings
     public static void Init(string baseDir, Action<string> log)
     {
         say = log;
-        cachePath = Path.Combine(baseDir, "SimsLinkBridge.names.json");
+        cachePath = Path.Combine(baseDir, "SulSulBridge.names.json");
         try
         {
             if (!File.Exists(cachePath)) return;
@@ -179,7 +179,7 @@ static class Strings
     /// <summary>游戏装在哪：从正在跑的游戏程序倒推（…\Game\Bin\TS4_x64.exe 往上两层）。</summary>
     static string GameDir()
     {
-        string forced = Environment.GetEnvironmentVariable("SIMSLINK_GAME_DIR") ?? "";
+        string forced = Environment.GetEnvironmentVariable("SULSUL_GAME_DIR") ?? "";
         if (forced.Length > 0) return forced;
         if (OperatingSystem.IsMacOS()) return Mac.GameDir();
         try

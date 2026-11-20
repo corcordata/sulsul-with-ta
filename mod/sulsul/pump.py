@@ -3,8 +3,8 @@ import json
 import threading
 import time
 
-from simslink import game, log, names
-from simslink.net import Link
+from sulsul import game, log, names
+from sulsul.net import Link
 
 SNAP_EVERY = 2.0        # 秒，真实时间
 RESEND_EVERY = 30.0     # 没变化也隔一阵报一次，服务器好知道「还在玩」
@@ -36,7 +36,7 @@ def later(fn):
 
 
 def _background(fn):
-    worker = threading.Thread(target=fn, name='SimsLinkJob')
+    worker = threading.Thread(target=fn, name='SulSulJob')
     worker.daemon = True
     worker.start()
 
@@ -52,7 +52,7 @@ def her_names():
 
 
 def set_names(which, names):
-    """ta ta 编号 / ta me 编号：记进 SimsLink.cfg，当场生效。"""
+    """ta ta 编号 / ta me 编号：记进 SulSul.cfg，当场生效。"""
     cfg[which] = list(names)
     log.save_config({which: list(names)})
     _state['force'] = True
@@ -123,7 +123,7 @@ def her_key(name, which='talk'):
     def job():
         reply = link.local('/local/key', {'key': name, 'which': which}, timeout=5)
         text = reply.get('text') or '没换成'
-        later(lambda: game.notify('SimsLink', text))
+        later(lambda: game.notify('Sul Sul', text))
 
     _background(job)
 
@@ -240,7 +240,7 @@ def _start_moodlets(cid, args):
 
 
 def her_ime(on):
-    """ta ime off：输入框弹出来时别替我切中文（想打英文的时候）；ta ime on 恢复。记进 SimsLink.cfg。"""
+    """ta ime off：输入框弹出来时别替我切中文（想打英文的时候）；ta ime on 恢复。记进 SulSul.cfg。"""
     cfg['auto_ime'] = bool(on)
     log.save_config({'auto_ime': bool(on)})
 
@@ -320,7 +320,7 @@ def her_pictures(count, caption=''):
     def job():
         answer = link.local('/local/send', {'count': count, 'caption': caption, 'dir': sims_dir}, timeout=90)
         text = str(answer.get('text') or '')
-        later(lambda: game.notify('SimsLink', text))
+        later(lambda: game.notify('Sul Sul', text))
 
     _background(job)
 
@@ -331,7 +331,7 @@ def her_auto_share(on):
     def job():
         answer = link.local('/local/auto', {'on': bool(on), 'dir': sims_dir}, timeout=10)
         text = str(answer.get('text') or '')
-        later(lambda: game.notify('SimsLink', text))
+        later(lambda: game.notify('Sul Sul', text))
 
     _background(job)
 
@@ -475,7 +475,7 @@ def on_tick():
             if not his_names() and not _state.get('nagged') and screen == 'live':
                 _state['nagged'] = True
                 try:
-                    game.notify('SimsLink', '还没告诉我哪个小人是 TA。按 %s 打开左上角的输入条，输入 ta who，' % game.CONSOLE_KEYS +
+                    game.notify('Sul Sul', '还没告诉我哪个小人是 TA。按 %s 打开左上角的输入条，输入 ta who，' % game.CONSOLE_KEYS +
                                             '照它列出来的编号选一下。只用设一次。')
                 except Exception:
                     log.once('nag', '提醒弹不出来：%s' % log.tail_error())
@@ -504,7 +504,7 @@ def install():
         log.once('caswatch', '认不出捏人界面（只影响「她在捏人」这句提示）：%s' % log.tail_error())
     import game_services
     original = game_services.on_tick
-    if getattr(original, '_simslink', False):
+    if getattr(original, '_sulsul', False):
         return
 
     def wrapped(*args, **kwargs):
@@ -515,6 +515,6 @@ def install():
             log.once('tick', '泵出错：%s' % log.tail_error())
         return result
 
-    wrapped._simslink = True
+    wrapped._sulsul = True
     game_services.on_tick = wrapped
     log.info('泵装好了，转发程序端口 %s，TA 的小人：%s' % (link.port, '/'.join(his_names()) or '还没设'))

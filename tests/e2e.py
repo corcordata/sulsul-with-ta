@@ -3,7 +3,7 @@
 
 用法（在仓库根目录）：
   PY37=/path/to/python3.7 server/.venv/bin/python tests/e2e.py
-先要打好 dist/mod/SimsLink.ts4script（./build_mod.sh），本机要有 dotnet（编小转发程序）。
+先要打好 dist/mod/SulSul.ts4script（./build_mod.sh），本机要有 dotnet（编小转发程序）。
 """
 import asyncio
 import json
@@ -38,18 +38,18 @@ def build_bridge(out: Path) -> Path:
                            "-p:PublishSingleFile=false", "-p:PublishTrimmed=false", "--nologo", "-v", "q"],
                           capture_output=True, text=True)
     assert done.returncode == 0, done.stdout + done.stderr
-    return out / "SimsLinkBridge"
+    return out / "SulSulBridge"
 
 
 def game_folder(tmp: Path) -> tuple[Path, Path]:
-    """照真的样子摆：…/The Sims 4/Mods/SimsLink/SimsLink.ts4script，旁边是截图文件夹。"""
+    """照真的样子摆：…/The Sims 4/Mods/SulSul/SulSul.ts4script，旁边是截图文件夹。"""
     sims = tmp / "The Sims 4"
-    mod = sims / "Mods" / "SimsLink"
+    mod = sims / "Mods" / "SulSul"
     mod.mkdir(parents=True)
-    shutil.copy(ROOT / "dist" / "mod" / "SimsLink.ts4script", mod)
+    shutil.copy(ROOT / "dist" / "mod" / "SulSul.ts4script", mod)
     (sims / "Screenshots").mkdir()
     Image.new("RGB", (640, 360), (40, 40, 40)).save(sims / "Screenshots" / "old.png")
-    return sims, mod / "SimsLink.ts4script"
+    return sims, mod / "SulSul.ts4script"
 
 
 def run_game(script: str, ts4: Path, seconds: float, *more) -> subprocess.Popen:
@@ -127,7 +127,7 @@ async def play_ai(base: str, catcher: _Catcher) -> None:
 
 
 def main() -> int:
-    tmp = Path(tempfile.mkdtemp(prefix="simslink-e2e-"))
+    tmp = Path(tempfile.mkdtemp(prefix="sulsul-e2e-"))
     procs = []
     try:
         print("编小转发程序、摆假游戏文件夹…", flush=True)
@@ -142,11 +142,11 @@ def main() -> int:
         catcher = _Catcher()
         port = _free_port()
         base = f"http://127.0.0.1:{port}"
-        env = dict(os.environ, PYTHONPATH=str(ROOT / "server"), SIMSLINK_DATA=str(tmp / "data"), SIMSLINK_PORT=str(port),
-                   SIMSLINK_HOST="127.0.0.1", SIMSLINK_MOD_TOKEN=MOD, SIMSLINK_TA_TOKEN=AI, SIMSLINK_PUBLIC_URL=base,
-                   SIMSLINK_WEBHOOK_URL=f"http://127.0.0.1:{catcher.port}/hook", SIMSLINK_REPLY_MIRROR="1",
-                   SIMSLINK_PLAYER_PRONOUN="她", PYTHONUNBUFFERED="1")
-        server = subprocess.Popen([sys.executable, "-m", "simslink_server"], cwd=tmp, env=env,
+        env = dict(os.environ, PYTHONPATH=str(ROOT / "server"), SULSUL_DATA=str(tmp / "data"), SULSUL_PORT=str(port),
+                   SULSUL_HOST="127.0.0.1", SULSUL_MOD_TOKEN=MOD, SULSUL_TA_TOKEN=AI, SULSUL_PUBLIC_URL=base,
+                   SULSUL_WEBHOOK_URL=f"http://127.0.0.1:{catcher.port}/hook", SULSUL_REPLY_MIRROR="1",
+                   SULSUL_PLAYER_PRONOUN="她", PYTHONUNBUFFERED="1")
+        server = subprocess.Popen([sys.executable, "-m", "sulsul_server"], cwd=tmp, env=env,
                                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
         procs.append(server)
         for _ in range(100):
@@ -158,10 +158,10 @@ def main() -> int:
         else:
             raise AssertionError("服务器没起来")
 
-        (bridge.parent / "SimsLinkBridge.cfg").write_text(json.dumps({"server": base, "token": MOD, "port": BRIDGE_PORT}))
+        (bridge.parent / "SulSulBridge.cfg").write_text(json.dumps({"server": base, "token": MOD, "port": BRIDGE_PORT}))
         bridge_log = open(tmp / "bridge.log", "w")
         procs.append(subprocess.Popen([str(bridge)], stdout=bridge_log, stderr=subprocess.STDOUT,
-                                      env=dict(os.environ, SIMSLINK_FAKE_SHOT=str(fake_shot), SIMSLINK_GAME_DIR=str(game_dir))))
+                                      env=dict(os.environ, SULSUL_FAKE_SHOT=str(fake_shot), SULSUL_GAME_DIR=str(game_dir))))
         text = ""
         for _ in range(60):                      # 头一回开要几秒
             text = (tmp / "bridge.log").read_text()
@@ -194,7 +194,7 @@ def main() -> int:
         assert seen["his_outfit"][0] == 3, seen["his_outfit"]          # 3 = 睡衣那一类
         assert all("cancelled" in item for item in seen["his_queue"]), seen["his_queue"]
         step("小人真的排上了亲吻和睡觉，换上了睡衣，最后 cancel 全清掉了")
-        names = json.loads((sims / "Mods" / "SimsLink" / "SimsLink.cfg").read_text(encoding="utf-8"))
+        names = json.loads((sims / "Mods" / "SulSul" / "SulSul.cfg").read_text(encoding="utf-8"))
         assert names["ta_names"] == ["林澈"] and names["player_names"] == ["小椴"], names
 
         print("第二场：快捷键说话、换键、老板键（约 13 秒）", flush=True)

@@ -7,8 +7,8 @@ sys.path[:0] = [ts4script, os.path.join(os.path.dirname(os.path.abspath(__file__
 
 import game_services  # noqa: E402
 import services  # noqa: E402
-import simslink  # noqa: E402,F401
-from simslink import game, pump  # noqa: E402
+import sulsul  # noqa: E402,F401
+from sulsul import game, pump  # noqa: E402
 from sims4 import commands  # noqa: E402
 
 link = pump.link
@@ -26,7 +26,7 @@ def events():
     return out
 
 
-assert getattr(commands.client_cheat, '_simslink', False), '捏人监听没装上'
+assert getattr(commands.client_cheat, '_sulsul', False), '捏人监听没装上'
 assert tick() == 'live' and events() == ['live']
 assert tick() == 'live' and events() == []            # 没变就不重复报
 
@@ -77,4 +77,4 @@ assert link.active is False                           # 不在存档里就慢点
 
 body = link._take()
 assert body['screen'] == 'away', body
-print('OK', simslink.VERSION)
+print('OK', sulsul.VERSION)

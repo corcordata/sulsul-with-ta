@@ -11,7 +11,7 @@ sys.path[:0] = [ts4script, os.path.join(os.path.dirname(os.path.abspath(__file__
 import game_services  # noqa: E402
 import services  # noqa: E402
 import world  # noqa: E402
-import simslink  # noqa: E402,F401
+import sulsul  # noqa: E402,F401
 from sims4 import commands  # noqa: E402
 
 

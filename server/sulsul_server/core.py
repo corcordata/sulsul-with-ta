@@ -1,4 +1,4 @@
-"""Sims 4 里的 mod（SimsLink）把游戏写成字交上来，AI 的话和动作从这里带回游戏。
+"""Sims 4 里的 mod（SulSul）把游戏写成字交上来，AI 的话和动作从这里带回游戏。
 
 这个文件是纯逻辑：收什么、存哪、怎么写成给 AI 看的字。不碰网络，不等任何东西；
 等指令 / 等结果 / 推送那部分在 app.py。单测 tests/test_core.py。
@@ -405,7 +405,7 @@ def format_now(root: Path, now: float | None = None) -> str:
     saved = _read(root / "state.json")
     seen = last_seen(root)
     if not saved:
-        return "〔Sims 4〕游戏还没连上过：她得先打开小转发程序（SimsLinkBridge），再进游戏。"
+        return "〔Sims 4〕游戏还没连上过：她得先打开小转发程序（SulSulBridge），再进游戏。"
     state = saved.get("state") or {}
     live = now - seen <= LIVE_SECONDS
     if not live:

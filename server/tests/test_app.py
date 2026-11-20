@@ -70,13 +70,13 @@ class _Catcher:
 
 def _start(tmp_path, **extra):
     port = _free_port()
-    env = dict(os.environ, SIMSLINK_DATA=str(tmp_path / "data"), SIMSLINK_PORT=str(port), SIMSLINK_HOST="127.0.0.1",
-               SIMSLINK_MOD_TOKEN=MOD, SIMSLINK_TA_TOKEN=AI, SIMSLINK_PUBLIC_URL=f"http://127.0.0.1:{port}",
+    env = dict(os.environ, SULSUL_DATA=str(tmp_path / "data"), SULSUL_PORT=str(port), SULSUL_HOST="127.0.0.1",
+               SULSUL_MOD_TOKEN=MOD, SULSUL_TA_TOKEN=AI, SULSUL_PUBLIC_URL=f"http://127.0.0.1:{port}",
                PYTHONUNBUFFERED="1")
-    for key in ("SIMSLINK_WEBHOOK_URL", "SIMSLINK_WEBHOOK_TOKEN", "SIMSLINK_REPLY_MIRROR", "SIMSLINK_PLAYER_PRONOUN"):
+    for key in ("SULSUL_WEBHOOK_URL", "SULSUL_WEBHOOK_TOKEN", "SULSUL_REPLY_MIRROR", "SULSUL_PLAYER_PRONOUN"):
         env.pop(key, None)
     env.update(extra)
-    proc = subprocess.Popen([sys.executable, "-m", "simslink_server"], cwd=tmp_path, env=dict(env, PYTHONPATH=str(SERVER_DIR)),
+    proc = subprocess.Popen([sys.executable, "-m", "sulsul_server"], cwd=tmp_path, env=dict(env, PYTHONPATH=str(SERVER_DIR)),
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     base = f"http://127.0.0.1:{port}"
     for _ in range(100):
@@ -93,8 +93,8 @@ def _start(tmp_path, **extra):
 def wired(tmp_path):
     """接全了的那种：有推送地址，回话也交给 /sims/reply。"""
     catcher = _Catcher()
-    proc, base = _start(tmp_path, SIMSLINK_WEBHOOK_URL=f"http://127.0.0.1:{catcher.port}/hook",
-                        SIMSLINK_WEBHOOK_TOKEN="hook-key", SIMSLINK_REPLY_MIRROR="1")
+    proc, base = _start(tmp_path, SULSUL_WEBHOOK_URL=f"http://127.0.0.1:{catcher.port}/hook",
+                        SULSUL_WEBHOOK_TOKEN="hook-key", SULSUL_REPLY_MIRROR="1")
     yield base, catcher
     proc.kill()
     catcher.httpd.shutdown()
@@ -253,7 +253,7 @@ def test_mcp_only_setup(bare):
 
 
 def test_pronoun_setting_reaches_every_exit(tmp_path):
-    proc, base = _start(tmp_path, SIMSLINK_PLAYER_PRONOUN="他")
+    proc, base = _start(tmp_path, SULSUL_PLAYER_PRONOUN="他")
     try:
         async def go():
             async with httpx.AsyncClient() as http:

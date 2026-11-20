@@ -1,10 +1,10 @@
 services:
-  simslink:
+  sulsul:
     build: .
     restart: unless-stopped
     env_file: .env
     environment:
-      SIMSLINK_DATA: /data
+      SULSUL_DATA: /data
     ports:
       - "127.0.0.1:8787:8787"     # 只对本机开；前面放 Caddy / nginx 做 https
     volumes:

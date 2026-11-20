@@ -10,6 +10,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .DS_Store
-SimsLinkBridge.key
-SimsLinkBridge.boss
-SimsLinkBridge.names.json
+SulSulBridge.key
+SulSulBridge.boss
+SulSulBridge.names.json
+SulSulBridge.ime
