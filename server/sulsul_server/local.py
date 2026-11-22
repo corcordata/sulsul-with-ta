@@ -54,7 +54,7 @@ class Borrowed:
 
     async def _ask(self, method: str, path: str, body: dict | None = None) -> dict:
         try:
-            async with httpx.AsyncClient(timeout=45) as client:
+            async with httpx.AsyncClient(timeout=660) as client:      # wait 最长能等十分钟
                 res = await client.request(method, self.base + path, json=body, headers=self.headers)
         except Exception as exc:
             raise RuntimeError(f"连不上这台电脑上的 Sul Sul 服务（{exc!r}）。把 Claude 桌面版完全退出再打开试试。")
@@ -72,6 +72,13 @@ class Borrowed:
         except RuntimeError as exc:
             return False, str(exc), []
         return got.get("live", False), got.get("text", ""), [str(u).rsplit("/", 1)[-1] for u in got.get("images") or []]
+
+    async def wait(self, seconds: float):
+        try:
+            got = await self._ask("GET", f"/sims/wait?seconds={float(seconds or 50)}")
+        except RuntimeError as exc:
+            return str(exc), []
+        return got.get("text", ""), [str(u).rsplit("/", 1)[-1] for u in got.get("images") or []]
 
     async def do(self, body: dict) -> dict:
         try:

@@ -57,12 +57,25 @@ def test_desktop_app_talks_over_stdio_while_the_game_knocks_on_localhost(tmp_pat
                         said = await client.call_tool("sims", {"action": "say", "text": "在。"})
                         assert said.content[0].text == "她屏幕右上角弹出来了。"
 
+                        # 守着：她没说话就等满；她一说话立刻回来，带着那句话
+                        quiet = await client.call_tool("sims", {"action": "wait", "seconds": 5})
+                        assert "5 秒里她没说话" in quiet.content[0].text
+                        waiting = asyncio.create_task(client.call_tool("sims", {"action": "wait", "seconds": 30}))
+                        await asyncio.sleep(1.0)
+                        await http.post(base + "/sims/mod/sync", headers={"Authorization": "Bearer local"},
+                                        json={"v": 1, "after": 10**15, "screen": "live", "events": [{"t": "say", "text": "来抱我"}]})
+                        heard = await asyncio.wait_for(waiting, timeout=10)
+                        assert "她在游戏里对你说：「来抱我」" in heard.content[0].text and "再调一次 action=wait" in heard.content[0].text
+                        after = await client.call_tool("sims", {"action": "look"})
+                        assert "还没看过" not in after.content[0].text          # wait 带回来的那句不再重复提
+
                         # 第二份（Claude 桌面版偶尔会同时带起两份）：不抢端口，转给第一份
                         async with Client(_params(tmp_path, port)) as second:
                             again = await second.call_tool("sims", {"action": "look"})
                             assert "阿澈（你）" in again.content[0].text
                             done = await second.call_tool("sims", {"action": "do", "target": "小椴", "name": "拥抱"})
                             assert "排上了：拥抱" in done.content[0].text
+                            assert "5 秒里她没说话" in (await second.call_tool("sims", {"action": "wait", "seconds": 5})).content[0].text
                             oops = await second.call_tool("sims", {"action": "do"})
                             assert oops.content[0].text.startswith("没成：")
                     finally:

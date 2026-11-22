@@ -75,6 +75,8 @@ class Hub:
         self.held: list[str] = []                 # 玩家一口气发来的截图，攒到最后一张再一起交
         self.unseen_photos: list[str] = []        # 玩家发来、AI 还没看过的截图
         self.last_id = 0
+        self.news: list[str] = []                 # 她说了话 / 发了图 / 游戏出了事：等着 TA 来听（action=wait）
+        self._heard: asyncio.Event | None = None
         self._signal: asyncio.Event | None = None
         self._tasks: set[asyncio.Task] = set()
 
@@ -84,6 +86,17 @@ class Hub:
         if self._signal is None:
             self._signal = asyncio.Event()
         return self._signal
+
+    @property
+    def heard(self) -> asyncio.Event:
+        if self._heard is None:
+            self._heard = asyncio.Event()
+        return self._heard
+
+    def tell(self, line: str) -> None:
+        """记一条 TA 该知道的新鲜事，把正守着的那一位叫醒。"""
+        self.news = (self.news + [line])[-20:]
+        self.heard.set()
 
     def spawn(self, coro) -> None:
         task = asyncio.create_task(coro)
@@ -165,11 +178,15 @@ class Hub:
             mark = self.marks.pop(cid, None)
             if mark is not None:
                 self.spawn(self._mark_done(mark, result))
-        if self.cfg.webhook_url:
-            for said in core.her_says(sync):
+        for said in core.her_says(sync):
+            self.tell(f"她在游戏里对你说：「{core.quote(said)}」")
+            if self.cfg.webhook_url:
                 note = await asyncio.to_thread(core.note_for_him, self.root)
                 self.push("say", core.tell_him_text(said, note), said=said, note=core.voice(note))
-            if wake:
+        if wake:
+            for reason in wake.get("reasons") or []:
+                self.tell(f"游戏里出事了：{reason}")
+            if self.cfg.webhook_url:
                 try:
                     self.push("wake", await asyncio.to_thread(core.wake_text, self.root, wake),
                               reasons=[core.voice(r) for r in wake.get("reasons") or []])
@@ -209,6 +226,7 @@ class Hub:
         names, self.held = self.held, []
         self.unseen_photos = (self.unseen_photos + names)[-core.HER_BATCH_MAX:]
         await asyncio.to_thread(core.record, self.root, {"events": [{"t": "photo", "by": "her", "count": len(names)}]})
+        self.tell(f"她从游戏里发来 {len(names)} 张截图" + (f"，附了一句：「{core.quote(query['caption'])}」" if query["caption"] else ""))
         if self.cfg.webhook_url:
             note = await asyncio.to_thread(core.note_for_him, self.root)
             self.push("photo", core.photo_text(len(names), query["caption"], note), caption=query["caption"],
@@ -225,7 +243,30 @@ class Hub:
         photos, self.unseen_photos = self.unseen_photos, []
         if photos:
             head = (head + "\n" if head else "") + f"〔她从游戏里发来 {len(photos)} 张截图，你还没看过〕"
+        self.news = []                          # 看过一眼，攒着的新鲜事就算听到了
+        self.heard.clear()
         return live, core.voice(f"{head}\n\n{text}" if head else text), photos
+
+    async def wait(self, seconds: float) -> tuple[str, list[str]]:
+        """守着：等到她在游戏里说话、发图，或者游戏里出了事才回来；一直没动静就等满 seconds 秒。
+        回 (给 TA 看的字, 她发来的截图文件名)。没接推送的 TA 靠这个陪她玩，不用她切窗口来叫。"""
+        seconds = min(600.0, max(5.0, float(seconds or 50)))
+        if not self.news:
+            self.heard.clear()
+            try:
+                await asyncio.wait_for(self.heard.wait(), timeout=seconds)
+            except asyncio.TimeoutError:
+                live = await asyncio.to_thread(core.is_live, self.root)
+                tail = "" if live else "游戏现在没连着。"
+                return core.voice(f"〔{int(seconds)} 秒里她没说话，游戏里也没出事。{tail}想接着守就再调一次 action=wait〕"), []
+            await asyncio.sleep(0.4)            # 她常常连着发两句：稍等一下一起带回去
+        news, self.news = self.news, []
+        self.heard.clear()
+        photos, self.unseen_photos = self.unseen_photos, []
+        await asyncio.to_thread(core.unseen_head, self.root)      # 这几句算看过了，下次 look 不再提
+        note = await asyncio.to_thread(core.note_for_him, self.root)
+        text = "\n".join(f"- {line}" for line in news) + "\n\n" + note
+        return core.voice(text + "\n（回完她，想接着陪她玩就再调一次 action=wait）"), photos
 
     async def do(self, body: dict) -> dict:
         """交一件事给游戏，等它做完回话。回 {ok, text[, photo]}；指令本身不对就 ValueError。"""
@@ -312,7 +353,7 @@ class Hub:
 
 # ───────────────────────── MCP：一个工具 ─────────────────────────
 
-ACTIONS = ("manual", "look", "say", "objects", "list", "do", "cancel", "speed", "photo", "outfit", "money", "moodlets")
+ACTIONS = ("manual", "look", "wait", "say", "objects", "list", "do", "cancel", "speed", "photo", "outfit", "money", "moodlets")
 
 
 def tool_description(cfg: Config) -> str:
@@ -327,6 +368,8 @@ def tool_description(cfg: Config) -> str:
         "想知道现在什么样 → action=look（地点、时间、每个小人在干嘛、心情、需求、你和她的关系、最近发生了什么，"
         "还有她在游戏里对你说了什么）。" + talk +
         "想让她当场打字回你 → action=say 加 reply=true（弹一个输入框）。"
+        "想一直陪着她、不用她切出游戏来叫你 → action=wait：一直等到她在游戏里跟你说话、发截图、或者游戏里出了事才回来"
+        "（默认最多等 50 秒，seconds 可以改；没动静就再调一次），回完她再接着 wait。"
         "操控小人：action=objects 看这块地上有什么 → action=list target=谁或什么 看能做什么 → action=do target=… name=动作名。"
         "动作是排队的，可以连着 do 好几个；排错了 action=cancel。"
         "action=outfit 换衣服（不带 name 先看有哪几类）。action=money amount=数 给她打钱（进家里的存款）。"
@@ -341,7 +384,7 @@ def build_mcp(hub: Hub) -> MCPServer:
 
     @server.tool(name="sims", description=tool_description(hub.cfg))
     async def sims(
-        action: Annotated[Literal[ACTIONS], Field(description="manual=说明书（第一次用先读）；look=现在什么样 + 最近发生了什么；say=在她游戏里说话；objects=这块地上有什么；list=对某个目标能做什么；do=去做；cancel=清空你小人手上和排队的事；outfit=换衣服；money=给她打钱；moodlets=情绪状态的完整卡片；photo=拍一张；speed=改游戏速度")],
+        action: Annotated[Literal[ACTIONS], Field(description="manual=说明书（第一次用先读）；look=现在什么样 + 最近发生了什么；wait=守着，等她在游戏里说话或游戏里出事；say=在她游戏里说话；objects=这块地上有什么；list=对某个目标能做什么；do=去做；cancel=清空你小人手上和排队的事；outfit=换衣服；money=给她打钱；moodlets=情绪状态的完整卡片；photo=拍一张；speed=改游戏速度")],
         text: Annotated[str, Field(description="say：要说的话，像发消息一样，别太长。photo / money：附的一句话，可以不写")] = "",
         target: Annotated[str, Field(description="list / do：对谁或对什么。小人的名字、self（对自己）、phone（手机）、objects 里 # 后面的编号、或物件名字的一部分（取离你最近的，比如 Bed、Fridge）")] = "",
         name: Annotated[str, Field(description="do：list 里列出的动作名，照抄；只写一部分也行，对得上唯一一个就做。outfit：日常 / 正装 / 运动 / 睡衣 / 派对 / 泳装 / 热天 / 冷天 / 不穿，同一类有好几套就写「日常 2」")] = "",
@@ -350,11 +393,15 @@ def build_mcp(hub: Hub) -> MCPServer:
         reply: Annotated[bool, Field(description="say：true=弹一个输入框让她当场打字回你")] = False,
         amount: Annotated[int, Field(description="money：打多少，1 到 50000")] = 0,
         speed: Annotated[str, Field(description="speed：pause / 1 / 2 / 3")] = "",
+        seconds: Annotated[int, Field(description="wait：最多等多少秒（5 到 600），默认 50")] = 50,
     ):
         if action == "manual":
             return core.voice(manual_text())
-        if action == "look":
-            _live, now, photos = await hub.look()
+        if action in ("look", "wait"):
+            if action == "look":
+                _live, now, photos = await hub.look()
+            else:
+                now, photos = await hub.wait(seconds)
             if not photos:
                 return now
             return [now] + [Image(path=hub.photo_dir / n) for n in photos if (hub.photo_dir / n).exists()]
@@ -438,6 +485,16 @@ def build(cfg: Config):
                              "hint": core.voice(await asyncio.to_thread(core.playing_hint, hub.root)),
                              "images": [hub.photo_url(n) for n in photos]})
 
+    async def wait(request: Request):
+        if not allowed(request, "ai"):
+            return denied
+        try:
+            seconds = float(request.query_params.get("seconds") or 50)
+        except ValueError:
+            seconds = 50
+        text, photos = await hub.wait(seconds)
+        return JSONResponse({"ok": True, "text": text, "images": [hub.photo_url(n) for n in photos]})
+
     async def do(request: Request):
         if not allowed(request, "ai"):
             return denied
@@ -475,6 +532,7 @@ def build(cfg: Config):
         Route("/sims/mod/sync", mod_sync, methods=["POST"]),
         Route("/sims/mod/photo", mod_photo, methods=["POST"]),
         Route("/sims/now", now),
+        Route("/sims/wait", wait),
         Route("/sims/do", do, methods=["POST"]),
         Route("/sims/reply", reply, methods=["POST"]),
         Route("/photos/{name}", photo_file),

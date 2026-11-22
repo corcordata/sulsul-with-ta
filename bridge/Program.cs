@@ -1,4 +1,4 @@
-// SulSulBridge：玩家电脑上的小转发程序（Windows 全功能；Mac 没有快捷键，见 Mac.cs / MacInput.cs）。
+// SulSulBridge：玩家电脑上的小转发程序。Windows 的系统接口在这个文件最下面；Mac 的在 Mac.cs / MacInput.cs / MacKeys.cs。
 // Sims 4 里的 Python 没有 ssl，连不了 https。游戏里的 mod 只敲本机这个端口，
 // 这里带上钥匙把它转给你自己的服务器，再把回话原样带回去。只转 /sims/mod/ 开头的路径。
 //
@@ -20,6 +20,11 @@ using System.Text.Json;
 
 Console.OutputEncoding = Encoding.UTF8;
 // Mac 上切输入法要在主线程上做：转发程序另开一份自己来办这一件事，办完就退（见 MacInput.cs）
+if (args.Length == 4 && args[0] == "--hotkeys" && OperatingSystem.IsMacOS() && int.TryParse(args[3], out int keeper))
+{
+    MacKeys.RunChild(args[1], args[2], keeper);        // 只等按键的那一份，见 MacKeys.cs
+    return;
+}
 if (args.Length == 2 && args[0] == "--ime" && OperatingSystem.IsMacOS())
 {
     Console.WriteLine(MacInput.Run(args[1], Path.Combine(AppContext.BaseDirectory, "SulSulBridge.ime")));
@@ -99,13 +104,16 @@ bool testing = Environment.GetEnvironmentVariable("SULSUL_FAKE_SHOT") is { Lengt
 Strings.Init(dir, Say);
 Say("SulSulBridge 1.0.0 开着了。玩 Sims 的时候让这个窗口一直开着，最小化就行。");
 bool mac = OperatingSystem.IsMacOS();
-if (mac) Say("想跟 TA 说话：在游戏里按 Cmd+Shift+C 打开输入条，输入 ta 回车。（Mac 版没有 F9 / F10 快捷键。）");
+if (mac) Say($"想跟 TA 说话：在游戏里按 {hotkey}（MacBook 上是 Fn+{hotkey}）。老板键：{bossKey}（游戏藏起来 + 静音）。换键：游戏输入条里打 ta key F9 / ta boss F10 这样。");
 else Say($"想跟 TA 说话：在游戏里按 {hotkey}。老板键：{bossKey}（游戏立刻缩下去 + 静音）。换键：游戏控制台打 ta key F9 / ta boss F10 这样。");
 if (localMode) Say("SulSulBridge.cfg 里没填服务器：用「本机模式」，连这台电脑上 Claude 桌面版的 Sul Sul 扩展。");
 await Probe();
 Say("等游戏来敲门……（进到存档里才会敲）");
 _ = Task.Run(WatchScreenshots);
 if (OperatingSystem.IsWindows()) Win.WatchHotkey(() => hotkey, () => bossKey, () => Pressed("talk"), Boss, Say);
+if (mac && !testing) MacKeys.Watch(() => hotkey, () => bossKey,
+    () => { if (Mac.GameInFront()) Pressed("talk"); },       // 这两个键一直被占着：游戏不在最前面就当没按
+    () => { if (Mac.GameInFront()) Boss(); }, Say);
 
 while (true)
 {
@@ -240,7 +248,6 @@ async Task<string> Local(string path, byte[] body)
         case "/local/key":
             string wanted = (root.TryGetProperty("key", out var k) ? k.GetString() ?? "" : "").Trim().ToUpperInvariant();
             bool forBoss = root.TryGetProperty("which", out var kw) && kw.GetString() == "boss";
-            if (mac && !testing) return Answer(false, "Mac 版没有快捷键。跟 TA 说话：Cmd+Shift+C 打开输入条，输入 ta 回车。");
             if (wanted.Length == 0) return Answer(true, $"说话快捷键是 {hotkey}，老板键是 {bossKey}。");
             if (Win.KeyCode(wanted) == 0 || wanted == "F12") return Answer(false, "只认 F1 到 F11（F12 被 Windows 自己占着）。比如 ta key F9、ta boss F10。");
             if (wanted == (forBoss ? hotkey : bossKey)) return Answer(false, $"{wanted} 已经是{(forBoss ? "说话快捷键" : "老板键")}了，两个不能用同一个键。");
@@ -315,7 +322,7 @@ void Pressed(string kind)
 void Boss()
 {
     // 先做不靠游戏的两样（缩窗口、静音），再请 mod 暂停——游戏卡死的时候最后那步做不成，前两样照样成
-    string done = OperatingSystem.IsWindows() ? Win.Hide() : "（不是 Windows，假装藏了）";
+    string done = OperatingSystem.IsWindows() ? Win.Hide() : mac && !testing ? Mac.Hide(Say) : "（不是 Windows，假装藏了）";
     Say("老板键：" + done);
     Pressed("boss");
 }
