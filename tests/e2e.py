@@ -194,7 +194,11 @@ def main() -> int:
         assert seen["his_outfit"][0] == 3, seen["his_outfit"]          # 3 = 睡衣那一类
         assert all("cancelled" in item for item in seen["his_queue"]), seen["his_queue"]
         step("小人真的排上了亲吻和睡觉，换上了睡衣，最后 cancel 全清掉了")
+        assert "「help」不行" in console and "好了：以后 mu 跟 ta 一样用" in console
+        assert console.count("TA 的小人：林澈｜我的小人：小椴") == 2       # 第二次是用 mu status 问的
+        step("ta call mu：给指令起自己的叫法，mu status 当场能用；游戏自己的秘籍词不让占")
         names = json.loads((sims / "Mods" / "SulSul" / "SulSul.cfg").read_text(encoding="utf-8"))
+        assert names["commands"] == ["mu"], names
         assert names["ta_names"] == ["林澈"] and names["player_names"] == ["小椴"], names
 
         print("第二场：快捷键说话、换键、老板键（约 13 秒）", flush=True)

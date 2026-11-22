@@ -615,3 +615,11 @@ def test_photo_text_carries_her_caption():
     text = core.photo_text(2, "新家", "〔Sims 4 · 连着，她正在玩〕")
     assert "2 张截图" in text and "「新家」" in text and "连着" in text
     assert "附了一句" not in core.photo_text(1, "", "x")
+
+
+def test_connected_but_not_in_a_save_yet(tmp_path):
+    """真游戏里见到的：mod 在主菜单就开始敲门了，这时候还没有状态，不能说「还没连上过」。"""
+    core.record(tmp_path, core.clean_sync({}), now=1000)
+    assert "还没进到存档里" in core.format_now(tmp_path, now=1005)
+    assert "还没连上过" in core.format_now(tmp_path, now=1000 + core.LIVE_SECONDS + 5)
+    assert core.MOODS["Stressed"] == "压力大"

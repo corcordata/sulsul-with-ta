@@ -27,6 +27,9 @@ plan = [
     (2.3, ta('me', '9')),                    # 没有这个号
     (2.4, ta('me', '小椴')),
     (2.6, ta('status')),
+    (2.7, ta('call', 'help')),               # 游戏自己的词：不让用
+    (2.8, ta('call', 'mu')),                 # 起一个自己的叫法
+    (2.9, lambda: commands.REGISTERED['mu']('status', _connection=1)),
     (4.0, ta('你在干嘛')),
     (7.0, lambda: world.HER._sim.si_state.append(world.Interaction('bed_Sleep', world.BED))),
     (20.0, ta('pic')),

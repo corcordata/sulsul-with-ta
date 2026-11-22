@@ -7,6 +7,7 @@ ta status      看连没连上、哪个小人是 TA、哪个是我
 ta who         把家里的小人编上号列出来
 ta ta 1        1 号小人是 TA（也可以写名字的一部分；ta ai / ta xj 是同一个意思）
 ta me 2        2 号小人是我
+ta call mu     给这个指令再起一个叫法：之后 mu 你在干嘛、mu who 都行，ta 照样能用
 ta key F9      换说话快捷键（F1 到 F11）；ta key 看现在是哪个
 ta boss F10    换老板键（按一下：游戏缩下去 + 静音 + 暂停）
 ta ime off     输入框弹出来时不替我切中文（想打英文的时候）；ta ime on 恢复自动切
@@ -14,6 +15,7 @@ ta pic         把刚截的那张图（按 C 截的）发给 TA；ta pic 3 发�
 ta pics on     之后新截的图自动发给 TA；ta pics off 关掉
 ta wake off    游戏里出了事不再自己去叫 TA（默认是开的）；ta wake on 打开
 """
+import re
 import time
 
 import sims4.commands
@@ -72,6 +74,43 @@ def _set_name(which, arg):
     return ['记下了：%s是「%s」。' % (label, name)]
 
 
+_WORD = re.compile(r'^[a-z][a-z0-9]{1,11}$')
+# 游戏自己的秘籍和常见 mod 已经占着的词，不能拿来当叫法
+_TAKEN = ('help', 'sims', 'bb', 'cas', 'stats', 'traits', 'careers', 'money', 'motherlode', 'kaching', 'rosebud',
+          'death', 'households', 'aspirations', 'fps', 'headlineeffects', 'hovereffects', 'testingcheats',
+          'resetsim', 'freerealestate', 'fullscreen', 'quit', 'debug', 'mc', 'mccc', 'ww', 'call', 'who', 'me')
+_extra = []
+
+
+def _register(word):
+    """再登记一个叫法，跟 ta 是同一个指令。登记不上（游戏不让在半路加）就等下次开游戏。"""
+    if word in ('ta', 'sulsul') or word in _extra:
+        return True
+    try:
+        sims4.commands.Command(word, command_type=sims4.commands.CommandType.Live)(_ta)
+        _extra.append(word)
+        return True
+    except Exception:
+        log.once('call', '叫法「%s」现在登记不上（下次开游戏再试）：%s' % (word, log.tail_error()))
+        return False
+
+
+def _call(word):
+    """ta call mu：给指令再起一个叫法，记进 SulSul.cfg。ta call 看现在有哪些。"""
+    saved = [str(w) for w in (pump.cfg.get('commands') or []) if w]
+    if not word:
+        return ['现在能用的叫法：%s。想加一个就输入 ta call 加上你想用的词，比如 ta call mu' % '、'.join(['ta'] + saved)]
+    if not _WORD.match(word) or word in _TAKEN:
+        return ['「%s」不行：要 2 到 12 个英文字母或数字、字母开头，而且不能是游戏自己的秘籍词。' % word]
+    if word not in saved:
+        saved = (saved + [word])[-5:]
+        pump.cfg['commands'] = saved
+        log.save_config({'commands': saved})
+    if _register(word):
+        return ['好了：以后 %s 跟 ta 一样用，比如 %s 你在干嘛、%s who。ta 照样能用。' % (word, word, word)]
+    return ['记下了：下次开游戏起，%s 跟 ta 一样用。' % word]
+
+
 @sims4.commands.Command('ta', 'sulsul', command_type=sims4.commands.CommandType.Live)
 def _ta(*args, _connection=None):
     try:
@@ -83,6 +122,10 @@ def _ta(*args, _connection=None):
         low = text.lower()
         if low in ('status', '状态'):
             output(_status())
+            return True
+        if low == 'call' or low.startswith('call '):
+            for line in _call(low[4:].strip()):
+                output(line)
             return True
         if low in ('who', '谁'):
             for line in _who():
@@ -134,3 +177,8 @@ def _ta(*args, _connection=None):
         log.exception('ta 命令出错')
         output('出错了，看 SulSul.log')
         return False
+
+
+for _word in [str(w) for w in (pump.cfg.get('commands') or []) if w]:     # 以前起过的叫法，开游戏时登记上
+    if _WORD.match(_word) and _word not in _TAKEN:
+        _register(_word)

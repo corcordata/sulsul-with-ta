@@ -90,7 +90,7 @@ MOODS = {
     "Happy": "开心", "Fine": "平静", "Sad": "难过", "Angry": "生气", "Flirty": "调情", "Focused": "专注",
     "Energized": "精力充沛", "Confident": "自信", "Inspired": "有灵感", "Playful": "顽皮", "Embarrassed": "尴尬",
     "Uncomfortable": "不舒服", "Tense": "紧张", "Bored": "无聊", "Dazed": "恍惚", "Scared": "害怕",
-    "Asleep": "睡着", "Possessed": "被附身",
+    "Asleep": "睡着", "Possessed": "被附身", "Stressed": "压力大",
 }
 DAYS = "日一二三四五六"
 # 她在哪个界面（mod 每趟都报）。live=游戏里；别的时候小人动不了。
@@ -405,6 +405,8 @@ def format_now(root: Path, now: float | None = None) -> str:
     saved = _read(root / "state.json")
     seen = last_seen(root)
     if not saved:
+        if seen and now - seen <= LIVE_SECONDS:      # mod 在敲门了，但还没交过一张状态：她在主菜单或读盘
+            return "〔Sims 4 · 连着｜她还没进到存档里（主菜单或读盘）〕"
         return "〔Sims 4〕游戏还没连上过：她得先打开小转发程序（SulSulBridge），再进游戏。"
     state = saved.get("state") or {}
     live = now - seen <= LIVE_SECONDS
