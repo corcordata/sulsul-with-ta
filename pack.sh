@@ -1,5 +1,5 @@
 #!/bin/sh
-# 打出给人下载的两个压缩包：dist/SulSul-<版本>-windows.zip 和 -mac.zip
+# 打出给人下载的两个压缩包：dist/sulsul-with-ta-<版本>-windows.zip 和 -mac.zip
 # 先要有：
 #   dist/mod/SulSul.ts4script                 ./build_mod.sh
 #   build/bridge-win/SulSulBridge.exe          cd bridge && dotnet publish -c Release -r win-x64   -o ../build/bridge-win
@@ -38,14 +38,14 @@ zipup() {
   unzip -l "$ZIP" | tail -1
 }
 
-WIN="SulSul-$VERSION-windows"
+WIN="sulsul-with-ta-$VERSION-windows"
 common "$STAGE/$WIN"
 mkdir -p "$STAGE/$WIN/2-bridge"
 cp build/bridge-win/SulSulBridge.exe "$STAGE/$WIN/2-bridge/"
 cfg "$STAGE/$WIN/2-bridge"
 zipup "$WIN"
 
-MAC="SulSul-$VERSION-mac"
+MAC="sulsul-with-ta-$VERSION-mac"
 common "$STAGE/$MAC"
 mkdir -p "$STAGE/$MAC/2-bridge"
 cp build/bridge-mac-arm64/SulSulBridge "$STAGE/$MAC/2-bridge/SulSulBridge-arm64"
