@@ -1,0 +1,33 @@
+{
+  "manifest_version": "0.4",
+  "name": "sulsul-with-ta",
+  "display_name": "Sul Sul with TA",
+  "version": "1.0.0",
+  "description": "让 Claude 住进你的《模拟人生 4》存档：看得见游戏，在游戏里跟你说话，操控自己的小人。",
+  "long_description": "不用服务器的装法。这个扩展在你玩游戏的电脑上开一个只听本机的小服务，游戏里的 mod 经小转发程序（SulSulBridge）把状态交给它，Claude 用一个叫 sims 的工具来看、说话、操控小人、换衣服、打钱、拍照。\n\n还需要：把 SulSul.ts4script 放进游戏的 Mods 文件夹，玩之前打开 SulSulBridge。玩的时候 Claude 桌面版要开着。\n\n这种装法下游戏叫不醒 Claude：你在游戏里说了话，要在 Claude 里跟它说一声，它才会去看。",
+  "author": {
+    "name": "Tilia & Quercus"
+  },
+  "server": {
+    "type": "uv",
+    "entry_point": "src/server.py",
+    "mcp_config": {
+      "command": "uv",
+      "args": ["run", "--directory", "${__dirname}", "src/server.py"]
+    }
+  },
+  "tools": [
+    {
+      "name": "sims",
+      "description": "看游戏现在什么样、在游戏里说话、操控小人、换衣服、打钱、拍照。第一次用先 action=manual 读说明书。"
+    }
+  ],
+  "compatibility": {
+    "platforms": ["darwin", "win32"],
+    "runtimes": {
+      "python": ">=3.10"
+    }
+  },
+  "keywords": ["sims", "sims 4", "模拟人生"],
+  "license": "MIT"
+}

@@ -33,22 +33,23 @@ string relay = "", token = "";
 int port = 47931;
 try
 {
-    using var doc = JsonDocument.Parse(File.ReadAllText(cfgPath));
-    var root = doc.RootElement;
-    relay = (root.TryGetProperty("server", out var r) ? r.GetString() ?? "" : "").TrimEnd('/');
-    token = root.TryGetProperty("token", out var t) ? t.GetString() ?? "" : "";
-    if (root.TryGetProperty("port", out var p) && p.TryGetInt32(out var pv)) port = pv;
+    if (File.Exists(cfgPath))
+    {
+        using var doc = JsonDocument.Parse(File.ReadAllText(cfgPath));
+        var root = doc.RootElement;
+        relay = (root.TryGetProperty("server", out var r) ? r.GetString() ?? "" : "").TrimEnd('/');
+        token = root.TryGetProperty("token", out var t) ? t.GetString() ?? "" : "";
+        if (root.TryGetProperty("port", out var p) && p.TryGetInt32(out var pv)) port = pv;
+    }
 }
 catch (Exception ex)
 {
     Fail($"读不了 SulSulBridge.cfg（要跟这个程序放在同一个文件夹里）：{ex.Message}");
     return;
 }
-if (relay.Length == 0 || token.Length == 0)
-{
-    Fail("SulSulBridge.cfg 里的 server 或 token 是空的。用记事本打开它，把你服务器的地址和钥匙填进去。");
-    return;
-}
+// 没填服务器（cfg 还是下载时的样子，或者干脆没有）：本机模式——连这台电脑上 Claude 桌面版带起来的那个服务
+bool localMode = relay.Length == 0 || token.Length == 0 || token == "PASTE-MOD-TOKEN-HERE" || relay.Contains("sims.example.com");
+if (localMode) { relay = "http://127.0.0.1:8787"; token = "local"; }
 
 var http = new HttpClient { Timeout = TimeSpan.FromSeconds(40) };
 http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
@@ -100,6 +101,7 @@ Say("SulSulBridge 1.0.0 开着了。玩 Sims 的时候让这个窗口一直开�
 bool mac = OperatingSystem.IsMacOS();
 if (mac) Say("想跟 TA 说话：在游戏里按 Cmd+Shift+C 打开输入条，输入 ta 回车。（Mac 版没有 F9 / F10 快捷键。）");
 else Say($"想跟 TA 说话：在游戏里按 {hotkey}。老板键：{bossKey}（游戏立刻缩下去 + 静音）。换键：游戏控制台打 ta key F9 / ta boss F10 这样。");
+if (localMode) Say("SulSulBridge.cfg 里没填服务器：用「本机模式」，连这台电脑上 Claude 桌面版的 Sul Sul 扩展。");
 await Probe();
 Say("等游戏来敲门……（进到存档里才会敲）");
 _ = Task.Run(WatchScreenshots);
@@ -119,12 +121,16 @@ async Task Probe()
     {
         using var res = await Post("/sims/mod/sync", Encoding.UTF8.GetBytes("{\"probe\":true}"), "application/json");
         if (res.IsSuccessStatusCode) Say("服务器连得上 ✓");
-        else if ((int)res.StatusCode is 401 or 403) Say("服务器不认这把钥匙：SulSulBridge.cfg 里的 token 要填服务器上的 MOD_TOKEN。");
+        else if ((int)res.StatusCode is 401 or 403) Say(localMode
+            ? "这台电脑的 8787 端口上开着另一份 Sul Sul 服务，不是 Claude 桌面版的扩展开的。先把那一份关掉。"
+            : "服务器不认这把钥匙：SulSulBridge.cfg 里的 token 要填服务器上的 MOD_TOKEN。");
         else Say($"服务器回了 {(int)res.StatusCode}，先开着，游戏来了再试。");
     }
     catch (Exception ex)
     {
-        Say($"现在连不上服务器（{Short(ex)}）。检查一下网络，先开着，会自己重试。");
+        Say(localMode
+            ? "现在连不上：Claude 桌面版开着吗？Sul Sul 扩展装了吗？这个窗口先开着，会自己重试。"
+            : $"现在连不上服务器（{Short(ex)}）。检查一下网络，先开着，会自己重试。");
     }
 }
 

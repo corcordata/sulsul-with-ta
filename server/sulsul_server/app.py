@@ -15,7 +15,9 @@ import hmac
 import json
 import re
 import secrets
+import sys
 import time
+from pathlib import Path
 from typing import Annotated, Literal
 
 import httpx
@@ -32,6 +34,22 @@ from .config import Config
 
 PHOTOS_KEEP = 300
 _PHOTO_NAME = re.compile(r"^[A-Za-z0-9_-]{20,64}\.jpg$")
+
+
+def log(text: str) -> None:
+    """日志一律写到 stderr：本机模式里 stdout 是留给 MCP 协议的，多印一个字连接就坏了。"""
+    print("[sulsul]" + text, file=sys.stderr, flush=True)
+
+
+def manual_text() -> str:
+    """给 TA 读的说明书。仓库里、下载包里、扩展包里放的位置不一样，挨个找。"""
+    here = Path(__file__).resolve().parent
+    for path in (here / "ta-manual.md", here.parents[1] / "docs" / "ta-manual.md", here.parents[1] / "TA-MANUAL.md"):
+        try:
+            return path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+    return "这份安装里没带说明书。请玩家把仓库里的 docs/ta-manual.md 发给你。"
 
 
 def _same(given: str, wanted: str) -> bool:
@@ -109,10 +127,10 @@ class Hub:
                     res = await client.post(self.cfg.webhook_url, json=payload, headers=headers)
                 if res.status_code < 500:
                     if res.status_code >= 400:
-                        print(f"[sulsul] 推送被拒了（{res.status_code}）：{payload['kind']}", flush=True)
+                        log(f" 推送被拒了（{res.status_code}）：{payload['kind']}")
                     return
             except Exception as exc:
-                print(f"[sulsul] 推送没成（第 {attempt + 1} 次）：{exc!r}", flush=True)
+                log(f" 推送没成（第 {attempt + 1} 次）：{exc!r}")
             await asyncio.sleep(2 * (attempt + 1))
 
     # ---- 游戏来敲门 ----
@@ -132,7 +150,7 @@ class Hub:
             wake = await asyncio.to_thread(core.wake_plan, self.root, sync)    # 要在存之前问：拿旧状态来比
         except Exception as exc:
             wake = None
-            print(f"[sulsul] wake_plan failed: {exc!r}", flush=True)
+            log(f" wake_plan failed: {exc!r}")
         await asyncio.to_thread(core.record, self.root, sync)
         for result in sync["results"]:
             try:
@@ -156,7 +174,7 @@ class Hub:
                     self.push("wake", await asyncio.to_thread(core.wake_text, self.root, wake),
                               reasons=[core.voice(r) for r in wake.get("reasons") or []])
                 except Exception as exc:
-                    print(f"[sulsul] wake failed: {exc!r}", flush=True)
+                    log(f" wake failed: {exc!r}")
         deadline = time.monotonic() + sync["wait"]
         while True:
             self.signal.clear()
@@ -289,12 +307,12 @@ class Hub:
             await asyncio.to_thread(core.log_events, self.root, [{
                 "t": "did", "ok": bool(result.get("ok")), "label": mark["label"], "text": said}])
         except Exception as exc:
-            print(f"[sulsul] mark result failed: {exc!r}", flush=True)
+            log(f" mark result failed: {exc!r}")
 
 
 # ───────────────────────── MCP：一个工具 ─────────────────────────
 
-ACTIONS = ("look", "say", "objects", "list", "do", "cancel", "speed", "photo", "outfit", "money", "moodlets")
+ACTIONS = ("manual", "look", "say", "objects", "list", "do", "cancel", "speed", "photo", "outfit", "money", "moodlets")
 
 
 def tool_description(cfg: Config) -> str:
@@ -305,7 +323,7 @@ def tool_description(cfg: Config) -> str:
             "她全屏玩的时候多半看不到聊天窗口：想让她在游戏里看到你的话 → action=say（弹在她屏幕右上角，头像是你的小人）。")
     return core.voice(
         "她在玩《模拟人生 4》的时候，你也在游戏里：看得见小人们在干嘛，能在她游戏里说话，能操控你自己的那个小人。"
-        "第一次用先读说明书（ta-manual.md）。"
+        "第一次用先 action=manual 把说明书读一遍。"
         "想知道现在什么样 → action=look（地点、时间、每个小人在干嘛、心情、需求、你和她的关系、最近发生了什么，"
         "还有她在游戏里对你说了什么）。" + talk +
         "想让她当场打字回你 → action=say 加 reply=true（弹一个输入框）。"
@@ -323,7 +341,7 @@ def build_mcp(hub: Hub) -> MCPServer:
 
     @server.tool(name="sims", description=tool_description(hub.cfg))
     async def sims(
-        action: Annotated[Literal[ACTIONS], Field(description="look=现在什么样 + 最近发生了什么；say=在她游戏里说话；objects=这块地上有什么；list=对某个目标能做什么；do=去做；cancel=清空你小人手上和排队的事；outfit=换衣服；money=给她打钱；moodlets=情绪状态的完整卡片；photo=拍一张；speed=改游戏速度")],
+        action: Annotated[Literal[ACTIONS], Field(description="manual=说明书（第一次用先读）；look=现在什么样 + 最近发生了什么；say=在她游戏里说话；objects=这块地上有什么；list=对某个目标能做什么；do=去做；cancel=清空你小人手上和排队的事；outfit=换衣服；money=给她打钱；moodlets=情绪状态的完整卡片；photo=拍一张；speed=改游戏速度")],
         text: Annotated[str, Field(description="say：要说的话，像发消息一样，别太长。photo / money：附的一句话，可以不写")] = "",
         target: Annotated[str, Field(description="list / do：对谁或对什么。小人的名字、self（对自己）、phone（手机）、objects 里 # 后面的编号、或物件名字的一部分（取离你最近的，比如 Bed、Fridge）")] = "",
         name: Annotated[str, Field(description="do：list 里列出的动作名，照抄；只写一部分也行，对得上唯一一个就做。outfit：日常 / 正装 / 运动 / 睡衣 / 派对 / 泳装 / 热天 / 冷天 / 不穿，同一类有好几套就写「日常 2」")] = "",
@@ -333,6 +351,8 @@ def build_mcp(hub: Hub) -> MCPServer:
         amount: Annotated[int, Field(description="money：打多少，1 到 50000")] = 0,
         speed: Annotated[str, Field(description="speed：pause / 1 / 2 / 3")] = "",
     ):
+        if action == "manual":
+            return core.voice(manual_text())
         if action == "look":
             _live, now, photos = await hub.look()
             if not photos:
@@ -381,8 +401,8 @@ class McpGate:
 
 # ───────────────────────── 拼起来 ─────────────────────────
 
-def create_app(cfg: Config | None = None):
-    cfg = cfg or Config()
+def build(cfg: Config):
+    """回 (网页服务, 那张桌子, MCP 服务器)。create_app 只要第一个；本机模式三个都要。"""
     core.SETTINGS.pronoun = cfg.pronoun
     core.SETTINGS.mirror = cfg.reply_mirror
     hub = Hub(cfg)
@@ -462,6 +482,8 @@ def create_app(cfg: Config | None = None):
     ]
     app = Starlette(routes=routes, lifespan=lambda _app: server.session_manager.run())
     app.state.hub = hub
-    gate = McpGate(app, cfg.ai_token)
-    gate.hub = hub          # 测试用
-    return gate
+    return McpGate(app, cfg.ai_token), hub, server
+
+
+def create_app(cfg: Config | None = None):
+    return build(cfg or Config())[0]

@@ -16,11 +16,22 @@ done
 mkdir -p dist
 STAGE=$(mktemp -d)
 
+# Claude 桌面版扩展（不用服务器的装法）：一个 zip，后缀 .mcpb
+EXT="$PWD/dist/sulsul-with-ta.mcpb"
+mkdir -p "$STAGE/ext/src/sulsul_server"
+cp desktop-extension/manifest.json desktop-extension/pyproject.toml "$STAGE/ext/"
+cp desktop-extension/src/server.py "$STAGE/ext/src/"
+cp server/sulsul_server/*.py docs/ta-manual.md "$STAGE/ext/src/sulsul_server/"
+if [ -f "$EXT" ]; then mv "$EXT" "$EXT.old"; fi
+(cd "$STAGE/ext" && zip -q -r -X "$EXT" .)
+unzip -l "$EXT" | tail -1
+
 common() {      # 两个包里一样的部分
   OUT="$1"
   mkdir -p "$OUT/1-put-into-Mods/SulSul" "$OUT/3-server/sulsul_server"
   cp dist/mod/SulSul.ts4script "$OUT/1-put-into-Mods/SulSul/"
-  cp server/sulsul_server/*.py "$OUT/3-server/sulsul_server/"
+  cp server/sulsul_server/*.py docs/ta-manual.md "$OUT/3-server/sulsul_server/"
+  cp "$EXT" "$OUT/sulsul-with-ta.mcpb"
   cp server/requirements.txt server/.env.example server/Dockerfile server/docker-compose.yml "$OUT/3-server/"
   cp INSTALL.md LICENSE "$OUT/"
   cp docs/ta-manual.md "$OUT/TA-MANUAL.md"
