@@ -369,7 +369,7 @@ def tool_description(cfg: Config) -> str:
         "还有她在游戏里对你说了什么）。" + talk +
         "想让她当场打字回你 → action=say 加 reply=true（弹一个输入框）。"
         "想一直陪着她、不用她切出游戏来叫你 → action=wait：一直等到她在游戏里跟你说话、发截图、或者游戏里出了事才回来"
-        "（默认最多等 50 秒，seconds 可以改；没动静就再调一次），回完她再接着 wait。"
+        "（一次最多等 60 秒，默认 50；没动静会空手回来，再调一次就是接着守），回完她再接着 wait。"
         "操控小人：action=objects 看这块地上有什么 → action=list target=谁或什么 看能做什么 → action=do target=… name=动作名。"
         "动作是排队的，可以连着 do 好几个；排错了 action=cancel。"
         "action=outfit 换衣服（不带 name 先看有哪几类）。action=money amount=数 给她打钱（进家里的存款）。"
@@ -393,7 +393,7 @@ def build_mcp(hub: Hub) -> MCPServer:
         reply: Annotated[bool, Field(description="say：true=弹一个输入框让她当场打字回你")] = False,
         amount: Annotated[int, Field(description="money：打多少，1 到 50000")] = 0,
         speed: Annotated[str, Field(description="speed：pause / 1 / 2 / 3")] = "",
-        seconds: Annotated[int, Field(description="wait：最多等多少秒（5 到 600），默认 50")] = 50,
+        seconds: Annotated[int, Field(description="wait：最多等多少秒（5 到 60），默认 50")] = 50,
     ):
         if action == "manual":
             return core.voice(manual_text())
@@ -401,7 +401,8 @@ def build_mcp(hub: Hub) -> MCPServer:
             if action == "look":
                 _live, now, photos = await hub.look()
             else:
-                now, photos = await hub.wait(seconds)
+                # 真的 Claude 桌面版里量过：一次工具调用等到 80 秒左右就被它判超时，所以这里封顶 60 秒
+                now, photos = await hub.wait(min(60, seconds))
             if not photos:
                 return now
             return [now] + [Image(path=hub.photo_dir / n) for n in photos if (hub.photo_dir / n).exists()]
